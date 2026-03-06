@@ -308,7 +308,7 @@ contains
     call log_r8_arr1d(io_unit, "forc_pbot", forc_pbot)
     call log_r8_arr1d(io_unit, "forc_lwrad", forc_lwrad)
     call log_r8_arr2d(io_unit, "forc_solad", forc_solad)
-    call log_r8_arr1d(io_unit, "forc_solai", forc_solai)
+    call log_r8_arr2d(io_unit, "forc_solai", forc_solai)
     call log_r8_arr1d(io_unit, "forc_rain", forc_rain)
     call log_r8_arr1d(io_unit, "forc_snow", forc_snow)
     call log_r8_arr1d(io_unit, "forc_hgt_u", forc_hgt_u)
