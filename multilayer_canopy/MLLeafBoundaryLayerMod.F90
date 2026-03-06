@@ -8,6 +8,9 @@ module MLLeafBoundaryLayerMod
   use abortutils, only : endrun
   use clm_varctl, only : iulog
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -56,6 +59,9 @@ contains
     real(r8) :: gbh_lam, gbv_lam, gbc_lam    ! Forced convection - laminar: conductances (mol/m2/s)
     real(r8) :: gbh_turb, gbv_turb, gbc_turb ! Forced convection - turbulent: conductances (mol/m2/s)
     real(r8) :: gbh_free, gbv_free, gbc_free ! Free convection: conductances (mol/m2/s)
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -74,6 +80,18 @@ contains
     gbv       => mlcanopy_inst%gbv_leaf       , &  ! Leaf boundary layer conductance: H2O (mol H2O/m2 leaf/s)
     gbc       => mlcanopy_inst%gbc_leaf         &  ! Leaf boundary layer conductance: CO2 (mol CO2/m2 leaf/s)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("LeafBoundaryLayer", io_call_id)
+    call io_trace_open_stage(io_call_id, "LeafBoundaryLayer", "inputs", io_unit)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_int(io_unit, "il", il)
+    call log_r8_arr2d(io_unit, "dpai", dpai)
+    call log_r8_arr2d(io_unit, "wind", wind)
+    call log_r8_arr2d(io_unit, "tair", tair)
+    call log_r8_arr3d(io_unit, "tleaf", tleaf)
+    call io_trace_close_stage(io_unit)
+#endif
 
     do fp = 1, num_filter
        p = filter(fp)
@@ -165,6 +183,15 @@ contains
 
        end do
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "LeafBoundaryLayer", "outputs", io_unit)
+    call log_r8_arr3d(io_unit, "gbh", gbh)
+    call log_r8_arr3d(io_unit, "gbv", gbv)
+    call log_r8_arr3d(io_unit, "gbc", gbc)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine LeafBoundaryLayer

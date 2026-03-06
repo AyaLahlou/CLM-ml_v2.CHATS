@@ -13,6 +13,9 @@ module MLSolarRadiationMod
   use shr_kind_mod, only : r8 => shr_kind_r8
   use MLpftconMod, only : MLpftcon
   use MLCanopyFluxesType, only : mlcanopy_type
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -78,6 +81,9 @@ contains
     real(r8) :: avmu(bounds%begp:bounds%endp,1:nlevmlcan)            ! Average inverse diffuse optical depth per unit leaf area
     real(r8) :: betad(bounds%begp:bounds%endp,1:nlevmlcan,1:numrad)  ! Upscatter parameter for diffuse radiation
     real(r8) :: betab(bounds%begp:bounds%endp,1:nlevmlcan,1:numrad)  ! Upscatter parameter for direct beam radiation
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -113,6 +119,18 @@ contains
     swdwn       => mlcanopy_inst%swdwn_profile     , &  ! Downward diffuse solar flux above canopy layer (W/m2)
     swbeam      => mlcanopy_inst%swbeam_profile      &  ! Direct beam solar flux above canopy layer (W/m2)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("SolarRadiation", io_call_id)
+    call io_trace_open_stage(io_call_id, "SolarRadiation", "inputs", io_unit)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_r8_arr1d(io_unit, "solar_zen", solar_zen)
+    call log_int_arr1d(io_unit, "ncan", ncan)
+    call log_r8_arr2d(io_unit, "dpai", dpai)
+    call log_r8_arr2d(io_unit, "dlai", dlai)
+    call log_r8_arr2d(io_unit, "dsai", dsai)
+    call io_trace_close_stage(io_unit)
+#endif
 
     ! Calculate canopy layer optical properties
 
@@ -282,6 +300,19 @@ contains
           apar(p,ic,isha) = swleaf(p,ic,isha,ivis) * J_to_umol
        end do
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "SolarRadiation", "outputs", io_unit)
+    call log_r8_arr2d(io_unit, "fracsun", fracsun)
+    call log_r8_arr2d(io_unit, "swveg", swveg)
+    call log_r8_arr2d(io_unit, "swvegsun", swvegsun)
+    call log_r8_arr2d(io_unit, "swvegsha", swvegsha)
+    call log_r8_arr2d(io_unit, "swsoi", swsoi)
+    call log_r8_arr3d(io_unit, "apar", apar)
+    call log_r8_arr2d(io_unit, "albcan", albcan)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine SolarRadiation

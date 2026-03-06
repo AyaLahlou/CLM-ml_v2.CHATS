@@ -8,6 +8,9 @@ module MLLeafFluxesMod
   use abortutils, only : endrun
   use clm_varctl, only : iulog
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -47,6 +50,9 @@ contains
     real(r8) :: gw                      ! Total conductance including evaporation (mol H2O/m2 leaf/s)
     real(r8) :: num1, num2, num3, den   ! Intermediate calculation
     real(r8) :: err                     ! Energy balance error (W/m2)
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -73,6 +79,22 @@ contains
     evleaf    => mlcanopy_inst%evleaf_leaf    , &  ! Leaf evaporation flux (mol H2O/m2 leaf/s)
     trleaf    => mlcanopy_inst%trleaf_leaf      &  ! Leaf transpiration flux (mol H2O/m2 leaf/s)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("LeafFluxes", io_call_id)
+    call io_trace_open_stage(io_call_id, "LeafFluxes", "inputs", io_unit)
+    call log_int(io_unit, "p", p)
+    call log_int(io_unit, "ic", ic)
+    call log_int(io_unit, "il", il)
+    call log_r8(io_unit, "tair_p_ic1", tair(p,ic+1))
+    call log_r8(io_unit, "eair_p_ic1", eair(p,ic+1))
+    call log_r8(io_unit, "tleaf_bef_p_ic_il", tleaf_bef(p,ic,il))
+    call log_r8(io_unit, "gbh_p_ic_il", gbh(p,ic,il))
+    call log_r8(io_unit, "gbv_p_ic_il", gbv(p,ic,il))
+    call log_r8(io_unit, "gs_p_ic_il", gs(p,ic,il))
+    call log_r8(io_unit, "rnleaf_p_ic_il", rnleaf(p,ic,il))
+    call io_trace_close_stage(io_unit)
+#endif
 
     ! Timestep (s)
 
@@ -142,6 +164,18 @@ contains
        trleaf(p,ic,il) = 0._r8
 
     end if
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "LeafFluxes", "outputs", io_unit)
+    call log_r8(io_unit, "tleaf_p_ic_il", tleaf(p,ic,il))
+    call log_r8(io_unit, "shleaf_p_ic_il", shleaf(p,ic,il))
+    call log_r8(io_unit, "lhleaf_p_ic_il", lhleaf(p,ic,il))
+    call log_r8(io_unit, "evleaf_p_ic_il", evleaf(p,ic,il))
+    call log_r8(io_unit, "trleaf_p_ic_il", trleaf(p,ic,il))
+    call log_r8(io_unit, "stleaf_p_ic_il", stleaf(p,ic,il))
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine LeafFluxes

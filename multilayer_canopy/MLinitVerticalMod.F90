@@ -9,6 +9,9 @@ module MLinitVerticalMod
   use clm_varctl, only : iulog
   use decompMod, only : bounds_type
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -66,6 +69,9 @@ contains
 
     real(r8) :: unit_lai = 1.0_r8                          ! Unit leaf area index of canopy (m2/m2)
     real(r8) :: unit_sai = 1.0_r8                          ! Unit stem area index of canopy (m2/m2)
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -87,6 +93,15 @@ contains
     zw          => mlcanopy_inst%zw_profile          , &  ! Canopy height at interface between two adjacent layers (m)
     dz          => mlcanopy_inst%dz_profile            &  ! Canopy layer thickness (m)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("initVerticalStructure", io_call_id)
+    call io_trace_open_stage(io_call_id, "initVerticalStructure", "inputs", io_unit)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_r8_arr1d(io_unit, "htop", htop)
+    call log_r8_arr1d(io_unit, "forc_hgt_u", forc_hgt_u)
+    call io_trace_close_stage(io_unit)
+#endif
 
     do fp = 1, num_filter
        p = filter(fp)
@@ -322,6 +337,20 @@ contains
 
     end do
 
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "initVerticalStructure", "outputs", io_unit)
+    call log_int_arr1d(io_unit, "ncan", ncan)
+    call log_int_arr1d(io_unit, "ntop", ntop)
+    call log_int_arr1d(io_unit, "nbot", nbot)
+    call log_r8_arr2d(io_unit, "zs", zs)
+    call log_r8_arr2d(io_unit, "zw", zw)
+    call log_r8_arr2d(io_unit, "dz", dz)
+    call log_r8_arr2d(io_unit, "dlai_frac", dlai_frac)
+    call log_r8_arr2d(io_unit, "dsai_frac", dsai_frac)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
+
     end associate
   end subroutine initVerticalStructure
 
@@ -355,6 +384,9 @@ contains
     integer  :: c                                ! Column index for CLM g/l/c/p hierarchy
     integer  :: g                                ! Grid cell index for CLM g/l/c/p hierarchy
     integer  :: ic                               ! Aboveground layer index
+#ifdef IO_TRACE
+    integer :: io_call_id_2, io_unit_2
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -377,6 +409,19 @@ contains
     tleaf       => mlcanopy_inst%tleaf_leaf                     &  ! Leaf temperature (K)
     )
 
+#ifdef IO_TRACE
+    call io_trace_begin("initVerticalProfiles", io_call_id_2)
+    call io_trace_open_stage(io_call_id_2, "initVerticalProfiles", "inputs", io_unit_2)
+    call log_int(io_unit_2, "num_filter", num_filter)
+    call log_r8_arr1d(io_unit_2, "forc_u", forc_u)
+    call log_r8_arr1d(io_unit_2, "forc_v", forc_v)
+    call log_r8_arr1d(io_unit_2, "forc_t", forc_t)
+    call log_r8_arr1d(io_unit_2, "forc_q", forc_q)
+    call log_r8_arr1d(io_unit_2, "forc_pbot", forc_pbot)
+    call log_r8_arr1d(io_unit_2, "forc_pco2", forc_pco2)
+    call io_trace_close_stage(io_unit_2)
+#endif
+
     ! Initialization of vertical profiles and canopy states
 
     do fp = 1, num_filter
@@ -397,6 +442,19 @@ contains
 
        tg(p) = forc_t(c)
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_2, "initVerticalProfiles", "outputs", io_unit_2)
+    call log_r8_arr2d(io_unit_2, "wind", wind)
+    call log_r8_arr2d(io_unit_2, "tair", tair)
+    call log_r8_arr2d(io_unit_2, "eair", eair)
+    call log_r8_arr2d(io_unit_2, "cair", cair)
+    call log_r8_arr2d(io_unit_2, "h2ocan", h2ocan)
+    call log_r8_arr3d(io_unit_2, "tleaf", tleaf)
+    call log_r8_arr1d(io_unit_2, "tg", tg)
+    call io_trace_close_stage(io_unit_2)
+    call io_trace_end(io_call_id_2)
+#endif
 
     end associate
   end subroutine initVerticalProfiles
@@ -426,12 +484,19 @@ contains
     integer  :: p                                ! Patch index for CLM g/l/c/p hierarchy
     real(r8) :: pbeta_lai_pft(0:mxpft,2)         ! PFT parameters for the leaf area density beta distribution (-)
     real(r8) :: pbeta_sai_pft(0:mxpft,2)         ! PFT parameters for the stem area density beta distribution (-)
+#ifdef IO_TRACE
+    integer :: io_call_id_3, io_unit_3
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
     pbeta_lai   => mlcanopy_inst%pbeta_lai_canopy , &  ! Parameters for the leaf area density 2-parameter beta distribution (-)
     pbeta_sai   => mlcanopy_inst%pbeta_sai_canopy   &  ! Parameters for the stem area density 2-parameter beta distribution (-)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("getPADparameters", io_call_id_3)
+#endif
 
     ! Parameters for the leaf/stem area density beta distribution.
     ! NOTE: pbeta(1) = pbeta(2) = 1 gives a uniform distribution.
@@ -487,6 +552,14 @@ contains
           pbeta_sai(p,2) = pbeta_sai_pft(patch%itype(p),2)
        end if
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_3, "getPADparameters", "outputs", io_unit_3)
+    call log_r8_arr2d(io_unit_3, "pbeta_lai", pbeta_lai)
+    call log_r8_arr2d(io_unit_3, "pbeta_sai", pbeta_sai)
+    call io_trace_close_stage(io_unit_3)
+    call io_trace_end(io_call_id_3)
+#endif
 
     end associate
   end subroutine getPADparameters

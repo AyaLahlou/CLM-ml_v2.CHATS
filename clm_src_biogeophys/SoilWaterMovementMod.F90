@@ -7,6 +7,9 @@ module SoilWaterMovementMod
   ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use decompMod, only : bounds_type
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -39,10 +42,31 @@ contains
 
     type(soilstate_type), intent(inout):: soilstate_inst
     type(waterstatebulk_type), intent(in)  :: waterstatebulk_inst
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
+
+#ifdef IO_TRACE
+    call io_trace_begin("SoilWater", io_call_id)
+    call io_trace_open_stage(io_call_id, "SoilWater", "inputs", io_unit)
+    call log_int(io_unit, "bounds%begc", bounds%begc)
+    call log_int(io_unit, "bounds%endc", bounds%endc)
+    call log_int(io_unit, "num_hydrologyc", num_hydrologyc)
+    call log_int_arr1d(io_unit, "filter_hydrologyc", filter_hydrologyc(1:num_hydrologyc))
+    call io_trace_close_stage(io_unit)
+#endif
 
     call soilwater_moisture_form (bounds, num_hydrologyc, filter_hydrologyc, &
     soilstate_inst, waterstatebulk_inst)
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "SoilWater", "outputs", io_unit)
+    call log_r8_arr2d(io_unit, "hk_l", soilstate_inst%hk_l_col)
+    call log_r8_arr2d(io_unit, "smp_l", soilstate_inst%smp_l_col)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
   end subroutine SoilWater
 

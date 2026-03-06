@@ -9,6 +9,9 @@ module MLGetAtmForcingMod
   use abortutils        , only : endrun
   use clm_varctl        , only : iulog
   use MLCanopyFluxesType, only : mlcanopy_type
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -112,6 +115,9 @@ module MLGetAtmForcingMod
     ! !LOCAL VARIABLES:
     integer  :: fp                        ! Filter index
     integer  :: p                         ! Patch index for CLM g/l/c/p hierarchy
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -158,6 +164,20 @@ module MLGetAtmForcingMod
     mmair          => mlcanopy_inst%mmair_forcing         , &  ! Derived: Molecular mass of air at reference height (kg/mol)
     cpair          => mlcanopy_inst%cpair_forcing           &  ! Derived: Specific heat of air (constant pressure) at reference height (J/mol/K)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("GetAtmForcing", io_call_id)
+    call io_trace_open_stage(io_call_id, "GetAtmForcing", "inputs", io_unit)
+    call log_r8(io_unit, "time_bef", time_bef)
+    call log_r8(io_unit, "time_cur", time_cur)
+    call log_r8(io_unit, "time_next", time_next)
+    call log_r8(io_unit, "time_ml", time_ml)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_r8_arr1d(io_unit, "tref_bef", tref_bef)
+    call log_r8_arr1d(io_unit, "tref_cur", tref_cur)
+    call log_r8_arr1d(io_unit, "tref_next", tref_next)
+    call io_trace_close_stage(io_unit)
+#endif
 
     do fp = 1, num_filter
        p = filter(fp)
@@ -219,6 +239,25 @@ module MLGetAtmForcingMod
        thvref(p) = thref(p) * (1._r8 + 0.61_r8 * qref(p))
 
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "GetAtmForcing", "outputs", io_unit)
+    call log_r8_arr1d(io_unit, "tref", tref)
+    call log_r8_arr1d(io_unit, "qref", qref)
+    call log_r8_arr1d(io_unit, "uref", uref)
+    call log_r8_arr1d(io_unit, "pref", pref)
+    call log_r8_arr1d(io_unit, "co2ref", co2ref)
+    call log_r8_arr2d(io_unit, "swskyb", swskyb)
+    call log_r8_arr2d(io_unit, "swskyd", swskyd)
+    call log_r8_arr1d(io_unit, "lwsky", lwsky)
+    call log_r8_arr1d(io_unit, "thref", thref)
+    call log_r8_arr1d(io_unit, "eref", eref)
+    call log_r8_arr1d(io_unit, "rhoair", rhoair)
+    call log_r8_arr1d(io_unit, "rhomol", rhomol)
+    call log_r8_arr1d(io_unit, "cpair", cpair)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine GetAtmForcing

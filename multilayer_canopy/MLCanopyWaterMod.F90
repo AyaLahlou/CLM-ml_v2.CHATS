@@ -8,6 +8,9 @@ module MLCanopyWaterMod
   use abortutils, only : endrun
   use clm_varctl, only : iulog
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -40,6 +43,9 @@ contains
     integer  :: p                                ! Patch index for CLM g/l/c/p hierarchy
     integer  :: ic                               ! Aboveground layer index
     real(r8) :: h2ocanmx                         ! Maximum allowed water on canopy layer (kg H2O/m2)
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -52,6 +58,15 @@ contains
     fwet         => mlcanopy_inst%fwet_profile        , &  ! Canopy layer fraction of plant area index that is wet
     fdry         => mlcanopy_inst%fdry_profile          &  ! Canopy layer fraction of plant area index that is green and dry
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("CanopyWettedFraction", io_call_id)
+    call io_trace_open_stage(io_call_id, "CanopyWettedFraction", "inputs", io_unit)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_r8_arr2d(io_unit, "dpai", dpai)
+    call log_r8_arr2d(io_unit, "h2ocan", h2ocan)
+    call io_trace_close_stage(io_unit)
+#endif
 
     do fp = 1, num_filter
        p = filter(fp)
@@ -82,6 +97,14 @@ contains
 
        end do
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "CanopyWettedFraction", "outputs", io_unit)
+    call log_r8_arr2d(io_unit, "fwet", fwet)
+    call log_r8_arr2d(io_unit, "fdry", fdry)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine CanopyWettedFraction
@@ -116,6 +139,9 @@ contains
     real(r8) :: qflx_candrip                     ! Flux of water falling off canopy (kg H2O/m2/s)
     real(r8) :: h2ocanmx                         ! Maximum allowed water on canopy layer (kg H2O/m2)
     real(r8) :: xrun                             ! Excess water that exceeds the leaf capacity (kg H2O/m2/s)
+#ifdef IO_TRACE
+    integer :: io_call_id_ci, io_unit_ci
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -133,6 +159,17 @@ contains
     qflx_tflrain => mlcanopy_inst%qflx_tflrain_canopy , &  ! Total rain throughfall onto ground (kg H2O/m2/s)
     qflx_tflsnow => mlcanopy_inst%qflx_tflsnow_canopy   &  ! Total snow throughfall onto ground (kg H2O/m2/s)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("CanopyInterception", io_call_id_ci)
+    call io_trace_open_stage(io_call_id_ci, "CanopyInterception", "inputs", io_unit_ci)
+    call log_int(io_unit_ci, "num_filter", num_filter)
+    call log_r8_arr1d(io_unit_ci, "qflx_rain", qflx_rain)
+    call log_r8_arr1d(io_unit_ci, "qflx_snow", qflx_snow)
+    call log_r8_arr2d(io_unit_ci, "dpai", dpai)
+    call log_r8_arr2d(io_unit_ci, "h2ocan_bef", h2ocan_bef)
+    call io_trace_close_stage(io_unit_ci)
+#endif
 
     dtime = dtime_ml
 
@@ -210,6 +247,16 @@ contains
 
     end do
 
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_ci, "CanopyInterception", "outputs", io_unit_ci)
+    call log_r8_arr2d(io_unit_ci, "h2ocan", h2ocan)
+    call log_r8_arr1d(io_unit_ci, "qflx_intr", qflx_intr)
+    call log_r8_arr1d(io_unit_ci, "qflx_tflrain", qflx_tflrain)
+    call log_r8_arr1d(io_unit_ci, "qflx_tflsnow", qflx_tflsnow)
+    call io_trace_close_stage(io_unit_ci)
+    call io_trace_end(io_call_id_ci)
+#endif
+
     end associate
   end subroutine CanopyInterception
 
@@ -236,6 +283,9 @@ contains
     integer  :: ic                                  ! Aboveground layer index
     real(r8) :: dtime                               ! Multilayer canopy timestep (s)
     real(r8) :: dew                                 ! Water (kg H2O/m2)
+#ifdef IO_TRACE
+    integer :: io_call_id_ce, io_unit_ce
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -248,6 +298,18 @@ contains
                                                     ! *** Input/Output ***
     h2ocan    => mlcanopy_inst%h2ocan_profile    &  ! Canopy layer intercepted water (kg H2O/m2)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("CanopyEvaporation", io_call_id_ce)
+    call io_trace_open_stage(io_call_id_ce, "CanopyEvaporation", "inputs", io_unit_ce)
+    call log_int(io_unit_ce, "num_filter", num_filter)
+    call log_r8_arr2d(io_unit_ce, "dpai", dpai)
+    call log_r8_arr2d(io_unit_ce, "fracsun", fracsun)
+    call log_r8_arr3d(io_unit_ce, "trleaf", trleaf)
+    call log_r8_arr3d(io_unit_ce, "evleaf", evleaf)
+    call log_r8_arr2d(io_unit_ce, "h2ocan", h2ocan)
+    call io_trace_close_stage(io_unit_ce)
+#endif
 
     dtime = dtime_ml
 
@@ -287,6 +349,13 @@ contains
 
        end do
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_ce, "CanopyEvaporation", "outputs", io_unit_ce)
+    call log_r8_arr2d(io_unit_ce, "h2ocan", h2ocan)
+    call io_trace_close_stage(io_unit_ce)
+    call io_trace_end(io_call_id_ce)
+#endif
 
     end associate
   end subroutine CanopyEvaporation

@@ -12,6 +12,9 @@ module SurfaceResistanceMod
   use WaterStateBulkType, only : waterstatebulk_type
   use TemperatureType, only : temperature_type
   use ColumnType, only : col
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -41,6 +44,9 @@ contains
     type(soilstate_type), intent(inout) :: soilstate_inst
     type(waterstatebulk_type), intent(in) :: waterstatebulk_inst
     type(temperature_type), intent(in) :: temperature_inst
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -48,9 +54,29 @@ contains
     soilresis   => soilstate_inst%soilresis_col   &  ! Soil evaporative resistance (s/m)
     )
 
+#ifdef IO_TRACE
+    call io_trace_begin("calc_soilevap_resis", io_call_id)
+    call io_trace_open_stage(io_call_id, "calc_soilevap_resis", "inputs", io_unit)
+    call log_int(io_unit, "bounds%begc", bounds%begc)
+    call log_int(io_unit, "bounds%endc", bounds%endc)
+    call log_int(io_unit, "num_nolakec", num_nolakec)
+    call log_int_arr1d(io_unit, "filter_nolakec", filter_nolakec(1:num_nolakec))
+    call log_r8_arr1d(io_unit, "dsl", dsl)
+    call log_r8_arr1d(io_unit, "soilresis", soilresis)
+    call io_trace_close_stage(io_unit)
+#endif
+
     call calc_soil_resistance_sl14 (bounds, num_nolakec, filter_nolakec, &
     soilstate_inst, waterstatebulk_inst, temperature_inst, &
     dsl(bounds%begc:bounds%endc), soilresis(bounds%begc:bounds%endc))
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "calc_soilevap_resis", "outputs", io_unit)
+    call log_r8_arr1d(io_unit, "dsl", dsl)
+    call log_r8_arr1d(io_unit, "soilresis", soilresis)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
 

@@ -9,6 +9,9 @@ module MLRungeKuttaMod
   use abortutils        , only : endrun
   use clm_varctl        , only : iulog
   use MLCanopyFluxesType, only : mlcanopy_type
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -45,6 +48,9 @@ module MLRungeKuttaMod
     integer  :: p                       ! Patch index for CLM g/l/c/p hierarchy
     integer  :: ic                      ! Aboveground layer index
     integer  :: j                       ! Runge-Kutta step index
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -70,6 +76,20 @@ module MLRungeKuttaMod
     lwp         => mlcanopy_inst%lwp_leaf           , &  ! Leaf water potential (MPa)
     tg          => mlcanopy_inst%tg_soil              &  ! Soil surface temperature (K)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("RungeKuttaUpdate", io_call_id)
+    call io_trace_open_stage(io_call_id, "RungeKuttaUpdate", "inputs", io_unit)
+    call log_int(io_unit, "irk", irk)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_r8_arr2d(io_unit, "tair_bef", tair_bef)
+    call log_r8_arr2d(io_unit, "eair_bef", eair_bef)
+    call log_r8_arr2d(io_unit, "h2ocan_bef", h2ocan_bef)
+    call log_r8_arr3d(io_unit, "tleaf_bef", tleaf_bef)
+    call log_r8_arr3d(io_unit, "lwp_bef", lwp_bef)
+    call log_r8_arr1d(io_unit, "tg_bef", tg_bef)
+    call io_trace_close_stage(io_unit)
+#endif
 
     ! General algorithm for p-order Runge-Kutta to solve the differential
     ! equation dy/dt = f(t,y) with h the step size:
@@ -171,6 +191,18 @@ module MLRungeKuttaMod
 
     end do
 
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "RungeKuttaUpdate", "outputs", io_unit)
+    call log_r8_arr2d(io_unit, "tair", tair)
+    call log_r8_arr2d(io_unit, "eair", eair)
+    call log_r8_arr2d(io_unit, "h2ocan", h2ocan)
+    call log_r8_arr3d(io_unit, "tleaf", tleaf)
+    call log_r8_arr3d(io_unit, "lwp", lwp)
+    call log_r8_arr1d(io_unit, "tg", tg)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
+
     end associate
   end subroutine RungeKuttaUpdate
 
@@ -189,7 +221,14 @@ module MLRungeKuttaMod
     real(r8), intent(out) :: a(nrk,nrk), b(nrk), c(nrk) ! Runge-Kutta parameters
     !
     ! !LOCAL VARIABLES:
+#ifdef IO_TRACE
+    integer :: io_call_id_2, io_unit_2
+#endif
     !---------------------------------------------------------------------
+
+#ifdef IO_TRACE
+    call io_trace_begin("RungeKuttaIni", io_call_id_2)
+#endif
 
     ! runge_kutta_type defines the Runge-Kutta method
 
@@ -337,6 +376,15 @@ module MLRungeKuttaMod
        c(3) = 1._r8 / 2._r8
        c(4) = 1._r8
     end select
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_2, "RungeKuttaIni", "outputs", io_unit_2)
+    call log_r8_arr2d(io_unit_2, "a", a)
+    call log_r8_arr1d(io_unit_2, "b", b)
+    call log_r8_arr1d(io_unit_2, "c", c)
+    call io_trace_close_stage(io_unit_2)
+    call io_trace_end(io_call_id_2)
+#endif
 
   end subroutine RungeKuttaIni
 

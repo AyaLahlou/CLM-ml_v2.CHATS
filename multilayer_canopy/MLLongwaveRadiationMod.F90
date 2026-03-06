@@ -10,6 +10,9 @@ module MLLongwaveRadiationMod
   use decompMod, only : bounds_type
   use shr_kind_mod, only : r8 => shr_kind_r8
   use MLCanopyFluxesType, only : mlcanopy_type
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -38,7 +41,23 @@ contains
     integer, intent(in) :: num_filter           ! Number of patches in filter
     integer, intent(in) :: filter(:)            ! Patch filter
     type(mlcanopy_type), intent(inout) :: mlcanopy_inst
+    !
+    ! !LOCAL VARIABLES:
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
+
+#ifdef IO_TRACE
+    call io_trace_begin("LongwaveRadiation", io_call_id)
+    call io_trace_open_stage(io_call_id, "LongwaveRadiation", "inputs", io_unit)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_r8_arr1d(io_unit, "lwsky", mlcanopy_inst%lwsky_forcing)
+    call log_r8_arr1d(io_unit, "tg_soil", mlcanopy_inst%tg_soil)
+    call log_r8_arr3d(io_unit, "tleaf", mlcanopy_inst%tleaf_leaf)
+    call log_r8_arr2d(io_unit, "dpai", mlcanopy_inst%dpai_profile)
+    call io_trace_close_stage(io_unit)
+#endif
 
     select case (longwave_type)
     case (1)
@@ -46,6 +65,16 @@ contains
     case default
        call endrun (msg=' ERROR: LongwaveRadiation: longwave_type not valid')
     end select
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "LongwaveRadiation", "outputs", io_unit)
+    call log_r8_arr1d(io_unit, "lwveg", mlcanopy_inst%lwveg_canopy)
+    call log_r8_arr1d(io_unit, "lwsoi", mlcanopy_inst%lwsoi_soil)
+    call log_r8_arr3d(io_unit, "lwleaf", mlcanopy_inst%lwleaf_leaf)
+    call log_r8_arr1d(io_unit, "lwup", mlcanopy_inst%lwup_canopy)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
   end subroutine LongwaveRadiation
 

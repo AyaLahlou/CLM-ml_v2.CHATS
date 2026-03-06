@@ -25,6 +25,9 @@ module MLCanopyFluxesMod
   use WaterFluxBulkType      , only : waterfluxbulk_type
   use WaterStateBulkType     , only : waterstatebulk_type
   use MLCanopyFluxesType     , only : mlcanopy_type
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -128,6 +131,9 @@ module MLCanopyFluxesMod
     integer  :: irk                                     ! Runge-Kutta step
     integer  :: nrk_steps                               ! Number of Runge-Kutta steps
     real(r8) :: ark(nrk,nrk), brk(nrk), crk(nrk)        ! Runge-Kutta parameters
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -207,6 +213,33 @@ module MLCanopyFluxesMod
     lwp_bef        => mlcanopy_inst%lwp_bef_leaf             , &  ! Leaf water potential for previous timestep (MPa)
     lwp_hist       => mlcanopy_inst%lwp_hist_leaf              &  ! Leaf water potential (not sun/shade average) for history files (MPa)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("MLCanopyFluxes", io_call_id)
+    call io_trace_open_stage(io_call_id, "MLCanopyFluxes", "inputs", io_unit)
+    call log_int(io_unit, "bounds%begp", bounds%begp)
+    call log_int(io_unit, "bounds%endp", bounds%endp)
+    call log_int(io_unit, "num_exposedvegp", num_exposedvegp)
+    call log_r8_arr1d(io_unit, "elai", elai)
+    call log_r8_arr1d(io_unit, "esai", esai)
+    call log_r8_arr2d(io_unit, "smp_l", smp_l)
+    call log_r8_arr2d(io_unit, "t_soisno", t_soisno)
+    call log_r8_arr1d(io_unit, "tref_cur", tref_cur)
+    call log_r8_arr1d(io_unit, "qref_cur", qref_cur)
+    call log_r8_arr1d(io_unit, "uref_cur", uref_cur)
+    call log_r8_arr1d(io_unit, "pref_cur", pref_cur)
+    call log_r8_arr2d(io_unit, "swskyb_cur", swskyb_cur)
+    call log_r8_arr2d(io_unit, "swskyd_cur", swskyd_cur)
+    call log_r8_arr1d(io_unit, "lwsky_cur", lwsky_cur)
+    call log_r8_arr1d(io_unit, "lai", lai)
+    call log_r8_arr1d(io_unit, "sai", sai)
+    call log_r8_arr2d(io_unit, "dpai", dpai)
+    call log_r8_arr2d(io_unit, "tair", tair)
+    call log_r8_arr2d(io_unit, "eair", eair)
+    call log_r8_arr3d(io_unit, "tleaf", tleaf)
+    call log_r8_arr1d(io_unit, "tg", tg)
+    call io_trace_close_stage(io_unit)
+#endif
 
     ! Get current step counter (nstep) and step size (dtime_clm) from CLM
 
@@ -687,6 +720,30 @@ module MLCanopyFluxesMod
           fsa(p) = swveg(p,ivis) + swveg(p,inir) + swsoi(p,ivis) + swsoi(p,inir)
        end do
     end if
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "MLCanopyFluxes", "outputs", io_unit)
+    call log_r8_arr1d(io_unit, "shflx", shflx)
+    call log_r8_arr1d(io_unit, "lhflx", lhflx)
+    call log_r8_arr1d(io_unit, "etflx", etflx)
+    call log_r8_arr1d(io_unit, "ustar", ustar)
+    call log_r8_arr1d(io_unit, "lwup", lwup)
+    call log_r8_arr2d(io_unit, "swveg", swveg)
+    call log_r8_arr2d(io_unit, "swsoi", swsoi)
+    call log_r8_arr1d(io_unit, "lwsoi", lwsoi)
+    call log_r8_arr1d(io_unit, "rnsoi", rnsoi)
+    call log_r8_arr1d(io_unit, "tg", tg)
+    call log_r8_arr2d(io_unit, "tair", tair)
+    call log_r8_arr2d(io_unit, "eair", eair)
+    call log_r8_arr3d(io_unit, "tleaf", tleaf)
+    call log_r8_arr2d(io_unit, "fracsun", fracsun)
+    call log_r8_arr1d(io_unit, "eflx_sh_tot", eflx_sh_tot)
+    call log_r8_arr1d(io_unit, "eflx_lh_tot", eflx_lh_tot)
+    call log_r8_arr1d(io_unit, "eflx_lwrad_out", eflx_lwrad_out)
+    call log_r8_arr1d(io_unit, "qflx_evap_tot", qflx_evap_tot)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine MLCanopyFluxes

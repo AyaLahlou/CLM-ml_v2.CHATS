@@ -8,6 +8,9 @@ module lnd_comp_nuopc
   ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use decompMod, only : bounds_type
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -54,9 +57,30 @@ contains
     character(len=256) :: fin1, fin2            ! File name
     !
     ! !LOCAL VARIABLES:
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
+#ifdef IO_TRACE
+    call io_trace_begin("ModelAdvance", io_call_id)
+    call io_trace_open_stage(io_call_id, "ModelAdvance", "inputs", io_unit)
+    call log_int(io_unit, "bounds%begp", bounds%begp)
+    call log_int(io_unit, "bounds%endp", bounds%endp)
+    call log_int(io_unit, "time_indx", time_indx)
+    call log_char(io_unit, "fin1", fin1)
+    call log_char(io_unit, "fin2", fin2)
+    call io_trace_close_stage(io_unit)
+#endif
+
     call clm_drv (bounds, time_indx, fin1, fin2)
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "ModelAdvance", "outputs", io_unit)
+    call log_char(io_unit, "status", "completed")
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
   end subroutine ModelAdvance
 

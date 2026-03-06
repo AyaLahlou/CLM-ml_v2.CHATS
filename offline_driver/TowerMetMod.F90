@@ -12,6 +12,9 @@ module TowerMetMod
   use atm2lndType, only: atm2lnd_type
   use wateratm2lndBulkType, only: wateratm2lndbulk_type
   use FrictionVelocityMod, only : frictionvel_type
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -170,6 +173,9 @@ contains
     real(r8) :: flds_loc(1,1,1)        ! Tower: Longwave radiation (W/m2)
     real(r8) :: pref_loc(1,1,1)        ! Tower: Air pressure at reference height (Pa)
     real(r8) :: prect_loc(1,1,1)       ! Tower: Precipitation (mm/s)
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -187,6 +193,17 @@ contains
     forc_snow  => wateratm2lndbulk_inst%forc_snow_downscaled_col, &  ! CLM: Snowfall rate (mm/s)
     forc_hgt_u => frictionvel_inst%forc_hgt_u_patch               &  ! CLM: Atmospheric reference height (m)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("TowerMetCurr", io_call_id)
+    call io_trace_open_stage(io_call_id, "TowerMetCurr", "inputs", io_unit)
+    call log_char(io_unit, "ncfilename", ncfilename)
+    call log_int(io_unit, "strt", strt)
+    call log_int(io_unit, "it", it)
+    call log_int(io_unit, "begp", begp)
+    call log_int(io_unit, "endp", endp)
+    call io_trace_close_stage(io_unit)
+#endif
 
     ! Read tower meteorology. These variables have the name var_loc
 
@@ -281,6 +298,23 @@ contains
        grc%londeg(g) = tower_lon(it)
 
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "TowerMetCurr", "outputs", io_unit)
+    call log_r8_arr1d(io_unit, "forc_u", forc_u)
+    call log_r8_arr1d(io_unit, "forc_v", forc_v)
+    call log_r8_arr1d(io_unit, "forc_t", forc_t)
+    call log_r8_arr1d(io_unit, "forc_q", forc_q)
+    call log_r8_arr1d(io_unit, "forc_pbot", forc_pbot)
+    call log_r8_arr1d(io_unit, "forc_lwrad", forc_lwrad)
+    call log_r8_arr2d(io_unit, "forc_solad", forc_solad)
+    call log_r8_arr1d(io_unit, "forc_solai", forc_solai)
+    call log_r8_arr1d(io_unit, "forc_rain", forc_rain)
+    call log_r8_arr1d(io_unit, "forc_snow", forc_snow)
+    call log_r8_arr1d(io_unit, "forc_hgt_u", forc_hgt_u)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine TowerMetCurr
@@ -443,6 +477,9 @@ contains
     real(r8) :: flds_loc(1,1,1)        ! Tower: Longwave radiation (W/m2)
     real(r8) :: pref_loc(1,1,1)        ! Tower: Air pressure at reference height (Pa)
     real(r8) :: prect_loc(1,1,1)       ! Tower: Precipitation (mm/s)
+#ifdef IO_TRACE
+    integer :: io_call_id_n, io_unit_n
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -455,6 +492,16 @@ contains
     swskyd_next    => mlcanopy_inst%swskyd_next_forcing   , &  ! Atmospheric diffuse solar radiation (W/m2) [next CLM timestep]
     lwsky_next     => mlcanopy_inst%lwsky_next_forcing      &  ! Atmospheric longwave radiation (W/m2) [next CLM timestep]
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("TowerMetNext", io_call_id_n)
+    call io_trace_open_stage(io_call_id_n, "TowerMetNext", "inputs", io_unit_n)
+    call log_char(io_unit_n, "ncfilename", ncfilename)
+    call log_int(io_unit_n, "strt", strt)
+    call log_int(io_unit_n, "begp", begp)
+    call log_int(io_unit_n, "endp", endp)
+    call io_trace_close_stage(io_unit_n)
+#endif
 
     ! Read tower meteorology. These variables have the name var_loc
 
@@ -499,6 +546,20 @@ contains
        co2ref_next(p) = TowerMetCO2()
 
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_n, "TowerMetNext", "outputs", io_unit_n)
+    call log_r8_arr1d(io_unit_n, "tref_next", tref_next)
+    call log_r8_arr1d(io_unit_n, "qref_next", qref_next)
+    call log_r8_arr1d(io_unit_n, "uref_next", uref_next)
+    call log_r8_arr1d(io_unit_n, "pref_next", pref_next)
+    call log_r8_arr1d(io_unit_n, "co2ref_next", co2ref_next)
+    call log_r8_arr2d(io_unit_n, "swskyb_next", swskyb_next)
+    call log_r8_arr2d(io_unit_n, "swskyd_next", swskyd_next)
+    call log_r8_arr1d(io_unit_n, "lwsky_next", lwsky_next)
+    call io_trace_close_stage(io_unit_n)
+    call io_trace_end(io_call_id_n)
+#endif
 
     end associate
   end subroutine TowerMetNext

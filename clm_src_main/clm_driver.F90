@@ -10,6 +10,9 @@ module clm_driver
   use ColumnType, only : col
   use decompMod, only : bounds_type
   use clm_instMod
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -50,6 +53,9 @@ contains
     real(r8) :: cv (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)   ! CLM: soil heat capacity (J/m2/K)
     real(r8) :: tk (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)   ! CLM: soil thermal conductivity at layer interface (W/m/K)
     real(r8) :: tk_h2osfc(bounds%begc:bounds%endc)                 ! CLM: thermal conductivity of h2osfc (W/m/K)
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -59,6 +65,21 @@ contains
     h2osno         => water_inst%h2osno_col                    , &  ! Total snow water (kg H2O/m2)
     h2osfc         => waterstatebulk_inst%h2osfc_col             &  ! Surface water (kg H2O/m2)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("clm_drv", io_call_id)
+    call io_trace_open_stage(io_call_id, "clm_drv", "inputs", io_unit)
+    call log_int(io_unit, "bounds%begp", bounds%begp)
+    call log_int(io_unit, "bounds%endp", bounds%endp)
+    call log_int(io_unit, "bounds%begc", bounds%begc)
+    call log_int(io_unit, "bounds%endc", bounds%endc)
+    call log_int(io_unit, "time_indx", time_indx)
+    call log_char(io_unit, "fin1", fin1)
+    call log_char(io_unit, "fin2", fin2)
+    call log_r8_arr2d(io_unit, "t_soisno", temperature_inst%t_soisno_col)
+    call log_r8_arr2d(io_unit, "h2osoi_vol", waterstatebulk_inst%h2osoi_vol_col)
+    call io_trace_close_stage(io_unit)
+#endif
 
     ! Read CLM data for current time slice
 
@@ -122,6 +143,18 @@ contains
     call SoilTemperature (bounds, filter%num_nolakec, filter%nolakec, &
     soilstate_inst, temperature_inst, waterdiagnosticbulk_inst, &
     waterstatebulk_inst, water_inst, mlcanopy_inst)
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "clm_drv", "outputs", io_unit)
+    call log_r8_arr2d(io_unit, "t_soisno", temperature_inst%t_soisno_col)
+    call log_r8_arr1d(io_unit, "eflx_sh_tot", energyflux_inst%eflx_sh_tot_patch)
+    call log_r8_arr1d(io_unit, "eflx_lh_tot", energyflux_inst%eflx_lh_tot_patch)
+    call log_r8_arr1d(io_unit, "eflx_lwrad_out", energyflux_inst%eflx_lwrad_out_patch)
+    call log_r8_arr2d(io_unit, "smp_l", soilstate_inst%smp_l_col)
+    call log_r8_arr2d(io_unit, "hk_l", soilstate_inst%hk_l_col)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine clm_drv

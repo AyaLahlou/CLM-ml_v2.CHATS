@@ -20,6 +20,9 @@ module MLSoilTemperatureMod
   use WaterType, only : water_type
   use MLMathToolsMod, only : tridiag
   use MLCanopyFluxesType, only : mlcanopy_type
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -80,6 +83,9 @@ module MLSoilTemperatureMod
     real(r8) :: ctri     (bounds%begc:bounds%endc,         1:nlevgrnd) ! For tridiagonal solution
     real(r8) :: rtri     (bounds%begc:bounds%endc,         1:nlevgrnd) ! For tridiagonal solution
     real(r8) :: utri     (bounds%begc:bounds%endc,         1:nlevgrnd) ! For tridiagonal solution
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -87,6 +93,17 @@ module MLSoilTemperatureMod
     t_soisno  => temperature_inst%t_soisno_col  , &  ! CLM: Soil temperature (K)
     gsoi      => mlcanopy_inst%gsoi_soil          &  ! CLMml: Soil heat flux (W/m2)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("SoilTemperature", io_call_id)
+    call io_trace_open_stage(io_call_id, "SoilTemperature", "inputs", io_unit)
+    call log_int(io_unit, "num_nolakec", num_nolakec)
+    call log_int_arr1d(io_unit, "filter_nolakec", filter_nolakec(1:num_nolakec))
+    call log_r8_arr2d(io_unit, "z", z)
+    call log_r8_arr2d(io_unit, "t_soisno", t_soisno)
+    call log_r8_arr1d(io_unit, "gsoi", gsoi)
+    call io_trace_close_stage(io_unit)
+#endif
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Stand-alone multilayer code (uncoupled to CLM) has one patch !
@@ -187,7 +204,14 @@ module MLSoilTemperatureMod
 
     end do
 
-    end associate 
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "SoilTemperature", "outputs", io_unit)
+    call log_r8_arr2d(io_unit, "t_soisno", t_soisno)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
+
+    end associate
   end subroutine SoilTemperature
 
   !-----------------------------------------------------------------------
@@ -227,9 +251,12 @@ module MLSoilTemperatureMod
     real(r8) :: fl                        ! Volume fraction of liquid or unfrozen water to total water
     real(r8) :: dksat                     ! Thermal conductivity for saturated soil (W/m/K)
     real(r8) :: zh2osfc
+#ifdef IO_TRACE
+    integer :: io_call_id_tp, io_unit_tp
+#endif
     !-----------------------------------------------------------------------
 
-    associate( & 
+    associate( &
     nbedrock    =>  col%nbedrock                     , & ! Input:  [integer (:)]     depth to bedrock index
     snl         =>  col%snl                          , & ! Input:  [integer (:)]     number of snow layers                    
     dz          =>  col%dz                           , & ! Input:  [real(r8) (:,:)]  layer thickness (m)                       
@@ -248,6 +275,20 @@ module MLSoilTemperatureMod
     watsat      =>  soilstate_inst%watsat_col        , & ! Input:  [real(r8) (:,:)]  volumetric soil water at saturation (porosity)
     thk         =>  soilstate_inst%thk_col             & ! Output: [real(r8) (:,:)]  thermal conductivity of each layer  [W/m-K]
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("SoilThermProp", io_call_id_tp)
+    call io_trace_open_stage(io_call_id_tp, "SoilThermProp", "inputs", io_unit_tp)
+    call log_int(io_unit_tp, "num_nolakec", num_nolakec)
+    call log_r8_arr2d(io_unit_tp, "t_soisno", t_soisno)
+    call log_r8_arr2d(io_unit_tp, "h2osoi_liq", h2osoi_liq)
+    call log_r8_arr2d(io_unit_tp, "h2osoi_ice", h2osoi_ice)
+    call log_r8_arr2d(io_unit_tp, "watsat", watsat)
+    call log_r8_arr2d(io_unit_tp, "tkmg", tkmg)
+    call log_r8_arr2d(io_unit_tp, "tkdry", tkdry)
+    call log_r8_arr2d(io_unit_tp, "csol", csol)
+    call io_trace_close_stage(io_unit_tp)
+#endif
 
     ! Thermal conductivity of soil from Farouki (1981)
 
@@ -340,7 +381,17 @@ module MLSoilTemperatureMod
        end do
     end do
 
-    end associate 
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_tp, "SoilThermProp", "outputs", io_unit_tp)
+    call log_r8_arr2d(io_unit_tp, "tk", tk)
+    call log_r8_arr2d(io_unit_tp, "cv", cv)
+    call log_r8_arr1d(io_unit_tp, "tk_h2osfc", tk_h2osfc)
+    call log_r8_arr2d(io_unit_tp, "thk", thk)
+    call io_trace_close_stage(io_unit_tp)
+    call io_trace_end(io_call_id_tp)
+#endif
+
+    end associate
    end subroutine SoilThermProp
 
 end module MLSoilTemperatureMod

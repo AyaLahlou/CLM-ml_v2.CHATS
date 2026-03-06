@@ -13,6 +13,9 @@ module clmDataMod
   use CanopyStateType, only : canopystate_type
   use SurfaceAlbedoType, only : surfalb_type
   use clmSoilOptionMod, only : clm_phys, nlev_soil_adjust
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -64,6 +67,9 @@ contains
     real(r8) :: h2osoi_factor_loc(1,1,1)         ! Soil moisture adjustment factor
 
     real(r8) :: h2osoi_factor
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -78,6 +84,20 @@ contains
     h2osoi_liq => waterstatebulk_inst%h2osoi_liq_col, &  ! CLM: Soil layer liquid water (kg H2O/m2)
     h2osoi_ice => waterstatebulk_inst%h2osoi_ice_col  &  ! CLM: Soil layer ice lens (kg H2O/m2)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("clmData", io_call_id)
+    call io_trace_open_stage(io_call_id, "clmData", "inputs", io_unit)
+    call log_char(io_unit, "fin_clm", fin_clm)
+    call log_char(io_unit, "fin_soil_adjust", fin_soil_adjust)
+    call log_int(io_unit, "strt", strt)
+    call log_int(io_unit, "begp", begp)
+    call log_int(io_unit, "endp", endp)
+    call log_int(io_unit, "begc", begc)
+    call log_int(io_unit, "endc", endc)
+    call log_r8_arr2d(io_unit, "watsat", watsat)
+    call io_trace_close_stage(io_unit)
+#endif
 
     ! Read CLM lai and sai data for current time step
 
@@ -139,6 +159,17 @@ contains
        end do
 
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "clmData", "outputs", io_unit)
+    call log_r8_arr1d(io_unit, "elai", elai)
+    call log_r8_arr1d(io_unit, "esai", esai)
+    call log_r8_arr2d(io_unit, "h2osoi_vol", h2osoi_vol)
+    call log_r8_arr2d(io_unit, "h2osoi_liq", h2osoi_liq)
+    call log_r8_arr2d(io_unit, "h2osoi_ice", h2osoi_ice)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine clmData

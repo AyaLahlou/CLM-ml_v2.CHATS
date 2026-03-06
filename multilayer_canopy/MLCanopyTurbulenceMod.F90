@@ -8,6 +8,9 @@ module MLCanopyTurbulenceMod
   use abortutils, only : endrun
   use clm_varctl, only : iulog, rslfile
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -53,7 +56,23 @@ contains
     type(mlcanopy_type), intent(inout) :: mlcanopy_inst
     !
     ! !LOCAL VARIABLES:
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
+
+#ifdef IO_TRACE
+    call io_trace_begin("CanopyTurbulence", io_call_id)
+    call io_trace_open_stage(io_call_id, "CanopyTurbulence", "inputs", io_unit)
+    call log_int(io_unit, "nstep_ml", nstep_ml)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_int_arr1d(io_unit, "filter", filter(1:num_filter))
+    call log_r8_arr1d(io_unit, "zref", mlcanopy_inst%zref_forcing)
+    call log_r8_arr1d(io_unit, "tref", mlcanopy_inst%tref_forcing)
+    call log_r8_arr1d(io_unit, "uref", mlcanopy_inst%uref_forcing)
+    call log_r8_arr2d(io_unit, "dpai", mlcanopy_inst%dpai_profile)
+    call io_trace_close_stage(io_unit)
+#endif
 
     select case (turb_type)
     case (1)
@@ -67,6 +86,16 @@ contains
        call endrun (msg=' ERROR: CanopyTurbulence: turb_type not valid')
 
     end select
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "CanopyTurbulence", "outputs", io_unit)
+    call log_r8_arr1d(io_unit, "ustar", mlcanopy_inst%ustar_canopy)
+    call log_r8_arr2d(io_unit, "wind", mlcanopy_inst%wind_profile)
+    call log_r8_arr2d(io_unit, "gac", mlcanopy_inst%gac_profile)
+    call log_r8_arr1d(io_unit, "gac0", mlcanopy_inst%gac0_soil)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
   end subroutine CanopyTurbulence
 

@@ -8,6 +8,9 @@ module MLFluxProfileSolutionMod
   use abortutils, only : endrun
   use clm_varctl, only : iulog
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -44,6 +47,9 @@ contains
     integer  :: fp                      ! Filter index
     integer  :: p                       ! Patch index for CLM g/l/c/p hierarchy
     integer  :: ic                      ! Aboveground layer index
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -53,6 +59,15 @@ contains
                                                      ! *** Output ***
     cair      => mlcanopy_inst%cair_profile       &  ! Canopy layer atmospheric CO2 (umol/mol)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("FluxProfileSolution", io_call_id)
+    call io_trace_open_stage(io_call_id, "FluxProfileSolution", "inputs", io_unit)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_r8_arr1d(io_unit, "co2ref", co2ref)
+    call log_int_arr1d(io_unit, "ncan", ncan)
+    call io_trace_close_stage(io_unit)
+#endif
 
     select case (flux_profile_type)
     case (0, -1)
@@ -88,6 +103,15 @@ contains
        call endrun (msg=' ERROR: FluxProfileSolution: flux_profile_type not valid')
 
     end select
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "FluxProfileSolution", "outputs", io_unit)
+    call log_r8_arr2d(io_unit, "cair", cair)
+    call log_r8_arr2d(io_unit, "tair", mlcanopy_inst%tair_profile)
+    call log_r8_arr2d(io_unit, "eair", mlcanopy_inst%eair_profile)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine FluxProfileSolution

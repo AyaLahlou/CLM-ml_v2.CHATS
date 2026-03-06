@@ -9,6 +9,9 @@ module CLMml_driver
   use clm_varctl, only : iulog
   use decompMod, only : bounds_type
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -80,7 +83,19 @@ contains
     character(len=256) :: fout3, fout4, fout5  ! Full output file name, including directory path
     character(len=256) :: fout6                ! Full output file name, including directory path
     character(len=256) :: fin1                 ! Full input file name for profile data, including directory path
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
+
+#ifdef IO_TRACE
+    call io_trace_init()
+    call io_trace_begin("CLMml_drv", io_call_id)
+    call io_trace_open_stage(io_call_id, "CLMml_drv", "inputs", io_unit)
+    call log_int(io_unit, "bounds%begp", bounds%begp)
+    call log_int(io_unit, "bounds%endp", bounds%endp)
+    call io_trace_close_stage(io_unit)
+#endif
 
     ! Initialize namelist run control variables
 
@@ -290,6 +305,13 @@ contains
 
     write (iulog,*) 'Successfully finished simulation'
 
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "CLMml_drv", "outputs", io_unit)
+    call log_char(io_unit, "status", "completed")
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
+
   end subroutine CLMml_drv
 
   !-----------------------------------------------------------------------
@@ -324,7 +346,21 @@ contains
     integer  :: p                           ! Patch index for CLM g/l/c/p hierarchy
     integer  :: c                           ! Column index for CLM g/l/c/p hierarchy
     integer  :: itim                        ! Time index
+#ifdef IO_TRACE
+    integer :: io_call_id_ia, io_unit_ia
+#endif
     !---------------------------------------------------------------------
+
+#ifdef IO_TRACE
+    call io_trace_begin("init_acclim", io_call_id_ia)
+    call io_trace_open_stage(io_call_id_ia, "init_acclim", "inputs", io_unit_ia)
+    call log_char(io_unit_ia, "fin", fin)
+    call log_int(io_unit_ia, "tower_num", tower_num)
+    call log_int(io_unit_ia, "ntim", ntim)
+    call log_int(io_unit_ia, "begp", begp)
+    call log_int(io_unit_ia, "endp", endp)
+    call io_trace_close_stage(io_unit_ia)
+#endif
 
     associate ( &
     forc_t    => atm2lnd_inst%forc_t_downscaled_col   , & ! CLM: Atmospheric temperature (K)
@@ -368,6 +404,14 @@ contains
        t10(p) = t10(p) / float(ntim)
     end do
 
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_ia, "init_acclim", "outputs", io_unit_ia)
+    call log_r8_arr1d(io_unit_ia, "t10", t10(begp:endp))
+    call log_r8_arr1d(io_unit_ia, "pref", pref(begp:endp))
+    call io_trace_close_stage(io_unit_ia)
+    call io_trace_end(io_call_id_ia)
+#endif
+
     end associate
   end subroutine init_acclim
 
@@ -401,7 +445,19 @@ contains
     data htop_pft(1:16) / 17._r8, 17._r8, 14._r8, 35._r8, 35._r8, 18._r8, 20._r8, 20._r8, &
                           0.5_r8, 0.5_r8, 0.5_r8, 0.5_r8, 0.5_r8, 0.5_r8, 0.5_r8, 0.5_r8 /
     data htop_pft(17:mxpft) / 62*0 /
+#ifdef IO_TRACE
+    integer :: io_call_id_tv, io_unit_tv
+#endif
     !---------------------------------------------------------------------
+
+#ifdef IO_TRACE
+    call io_trace_begin("TowerVeg", io_call_id_tv)
+    call io_trace_open_stage(io_call_id_tv, "TowerVeg", "inputs", io_unit_tv)
+    call log_int(io_unit_tv, "it", it)
+    call log_int(io_unit_tv, "begp", begp)
+    call log_int(io_unit_tv, "endp", endp)
+    call io_trace_close_stage(io_unit_tv)
+#endif
 
     associate ( &
     htop         => canopystate_inst%htop_patch,       &  ! CLM: canopy height (m)
@@ -444,6 +500,14 @@ contains
 
     end do
 
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_tv, "TowerVeg", "outputs", io_unit_tv)
+    call log_r8_arr1d(io_unit_tv, "htop", htop(begp:endp))
+    call log_r8_arr1d(io_unit_tv, "root_biomass", root_biomass(begp:endp))
+    call io_trace_close_stage(io_unit_tv)
+    call io_trace_end(io_call_id_tv)
+#endif
+
     end associate
   end subroutine TowerVeg
 
@@ -485,7 +549,20 @@ contains
     real(r8) :: tsoi_loc(1,1,nlevgrnd)         ! CLM: soil temperature (K)
     real(r8) :: h2osoi_loc_clm45(1,1,nlevgrnd) ! CLM4.5: volumetric soil moisture (m3/m3)
     real(r8) :: h2osoi_loc_clm50(1,1,nlevsoi)  ! CLM5.0: volumetric soil moisture (m3/m3)
+#ifdef IO_TRACE
+    integer :: io_call_id_si, io_unit_si
+#endif
     !---------------------------------------------------------------------
+
+#ifdef IO_TRACE
+    call io_trace_begin("SoilInit", io_call_id_si)
+    call io_trace_open_stage(io_call_id_si, "SoilInit", "inputs", io_unit_si)
+    call log_char(io_unit_si, "ncfilename", ncfilename)
+    call log_int(io_unit_si, "strt", strt)
+    call log_int(io_unit_si, "begc", begc)
+    call log_int(io_unit_si, "endc", endc)
+    call io_trace_close_stage(io_unit_si)
+#endif
 
     associate ( &
     dz          => col%dz                         , &  ! CLM: Soil layer thickness (m)
@@ -577,6 +654,16 @@ contains
 
     end do
 
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_si, "SoilInit", "outputs", io_unit_si)
+    call log_r8_arr2d(io_unit_si, "t_soisno", t_soisno)
+    call log_r8_arr2d(io_unit_si, "h2osoi_vol", h2osoi_vol)
+    call log_r8_arr2d(io_unit_si, "h2osoi_liq", h2osoi_liq)
+    call log_r8_arr2d(io_unit_si, "h2osoi_ice", h2osoi_ice)
+    call io_trace_close_stage(io_unit_si)
+    call io_trace_end(io_call_id_si)
+#endif
+
     end associate
   end subroutine SoilInit
 
@@ -630,7 +717,18 @@ contains
     real(r8) :: mflx                   ! Vertical momentum flux profile (m2/s2)
     real(r8) :: lhflx_tr, lhflx_ev     ! Transpiration and canopy evaporation (W/m2)
     real(r8) :: time_stamp             ! Calendar day for output files
+#ifdef IO_TRACE
+    integer :: io_call_id_out, io_unit_out
+#endif
     !---------------------------------------------------------------------
+
+#ifdef IO_TRACE
+    call io_trace_begin("output", io_call_id_out)
+    call io_trace_open_stage(io_call_id_out, "output", "inputs", io_unit_out)
+    call log_r8(io_unit_out, "curr_calday", curr_calday)
+    call log_int(io_unit_out, "it", it)
+    call io_trace_close_stage(io_unit_out)
+#endif
 
     missing_value = -999._r8
     zero_value = 0._r8
@@ -800,6 +898,13 @@ contains
     write (nout6,'(f12.7,20f10.3)') time_stamp, &
     (col%z(1,ic),temperature_inst%t_soisno_col(1,ic),ic=1,10)
 
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_out, "output", "outputs", io_unit_out)
+    call log_char(io_unit_out, "status", "written")
+    call io_trace_close_stage(io_unit_out)
+    call io_trace_end(io_call_id_out)
+#endif
+
   end subroutine output
 
   !-----------------------------------------------------------------------
@@ -832,7 +937,19 @@ contains
     integer  :: i                       ! Dummy index for x
     integer  :: nrec                    ! Number of vertical levels in data file
     real(r8) :: check                   ! Check for same calendar day
+#ifdef IO_TRACE
+    integer :: io_call_id_rc, io_unit_rc
+#endif
     !---------------------------------------------------------------------
+
+#ifdef IO_TRACE
+    call io_trace_begin("ReadCanopyProfiles", io_call_id_rc)
+    call io_trace_open_stage(io_call_id_rc, "ReadCanopyProfiles", "inputs", io_unit_rc)
+    call log_int(io_unit_rc, "itim", itim)
+    call log_r8(io_unit_rc, "curr_calday", curr_calday)
+    call log_int(io_unit_rc, "nin1", nin1)
+    call io_trace_close_stage(io_unit_rc)
+#endif
 
     associate ( &
     ncan           => mlcanopy_inst%ncan_canopy           , &  ! Number of aboveground layers
@@ -891,6 +1008,15 @@ contains
        tair_data(p,ic) = tair
        eair_data(p,ic) = qair * pref(p) / (mmh2o / mmdry + (1._r8 - mmh2o / mmdry) * qair)
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_rc, "ReadCanopyProfiles", "outputs", io_unit_rc)
+    call log_r8_arr2d(io_unit_rc, "wind_data", wind_data)
+    call log_r8_arr2d(io_unit_rc, "tair_data", tair_data)
+    call log_r8_arr2d(io_unit_rc, "eair_data", eair_data)
+    call io_trace_close_stage(io_unit_rc)
+    call io_trace_end(io_call_id_rc)
+#endif
 
     end associate
   end subroutine ReadCanopyProfiles

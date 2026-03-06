@@ -8,6 +8,9 @@ module MLLeafPhotosynthesisMod
   use abortutils, only : endrun
   use clm_varctl, only : iulog
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -160,6 +163,9 @@ contains
     real(r8) :: t1,t2,t3,t4             ! C4 temperature terms
     real(r8) :: fpsi                    ! Relative effect of leaf water potential on stomatal conductance
     real(r8), parameter :: tol = 0.1_r8 ! Convergence tolerance for Ci (mol/mol)
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -213,6 +219,17 @@ contains
     cs        => mlcanopy_inst%cs_leaf         , &  ! Leaf surface CO2 (umol/mol)
     gs        => mlcanopy_inst%gs_leaf           &  ! Leaf stomatal conductance (mol H2O/m2 leaf/s)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("LeafPhotosynthesis", io_call_id)
+    call io_trace_open_stage(io_call_id, "LeafPhotosynthesis", "inputs", io_unit)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_int(io_unit, "il", il)
+    call log_r8_arr3d(io_unit, "tleaf", mlcanopy_inst%tleaf_leaf)
+    call log_r8_arr3d(io_unit, "apar", mlcanopy_inst%apar_leaf)
+    call log_r8_arr3d(io_unit, "vcmax25", mlcanopy_inst%vcmax25_leaf)
+    call io_trace_close_stage(io_unit)
+#endif
 
     do fp = 1, num_filter
        p = filter(fp)
@@ -458,6 +475,14 @@ contains
 
        end do
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "LeafPhotosynthesis", "outputs", io_unit)
+    call log_r8_arr3d(io_unit, "gs", mlcanopy_inst%gs_leaf)
+    call log_r8_arr3d(io_unit, "anet", mlcanopy_inst%anet_leaf)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine LeafPhotosynthesis

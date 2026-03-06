@@ -8,6 +8,9 @@ module MLLeafHeatCapacityMod
   use abortutils, only : endrun
   use clm_varctl, only : iulog
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -45,6 +48,9 @@ contains
     real(r8) :: dry_weight                   ! Leaf dry mass per area (kg DM / m2 leaf)
     real(r8) :: fresh_weight                 ! Leaf fresh mass per area (kg FM / m2 leaf)
     real(r8) :: leaf_water                   ! Leaf water (kg H2O / m2 leaf)
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -55,6 +61,14 @@ contains
                                                  ! *** Output ***
     cpleaf    => mlcanopy_inst%cpleaf_profile &  ! Canopy layer leaf heat capacity (J/m2 leaf/K)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("LeafHeatCapacity", io_call_id)
+    call io_trace_open_stage(io_call_id, "LeafHeatCapacity", "inputs", io_unit)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_r8_arr2d(io_unit, "dpai", dpai)
+    call io_trace_close_stage(io_unit)
+#endif
 
     ! Leaf heat capacity - need to convert specific leaf area (m2/gC) to
     ! leaf mass per area (kgC/m2) and then convert to dry weight (assume
@@ -78,6 +92,13 @@ contains
           end if
        end do
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "LeafHeatCapacity", "outputs", io_unit)
+    call log_r8_arr2d(io_unit, "cpleaf", cpleaf)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine LeafHeatCapacity

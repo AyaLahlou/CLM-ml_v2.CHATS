@@ -9,6 +9,9 @@ module SurfaceAlbedoMod
   use decompMod, only : bounds_type
   use WaterStateBulkType, only : waterstatebulk_type
   use SurfaceAlbedoType, only : surfalb_type
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -106,6 +109,9 @@ contains
     integer  :: ib                    ! Waveband index
     integer  :: soilcol               ! Soil color
     real(r8) :: inc                   ! Soil water correction factor for soil albedo
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -115,6 +121,17 @@ contains
     albsoib    => surfalb_inst%albgrd_col           , &  ! Direct beam albedo of ground (soil)
     albsoid    => surfalb_inst%albgri_col             &  ! Diffuse albedo of ground (soil)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("SoilAlbedo", io_call_id)
+    call io_trace_open_stage(io_call_id, "SoilAlbedo", "inputs", io_unit)
+    call log_int(io_unit, "bounds%begc", bounds%begc)
+    call log_int(io_unit, "bounds%endc", bounds%endc)
+    call log_int(io_unit, "num_nourbanc", num_nourbanc)
+    call log_int_arr1d(io_unit, "filter_nourbanc", filter_nourbanc(1:num_nourbanc))
+    call log_r8_arr2d(io_unit, "h2osoi_vol", h2osoi_vol)
+    call io_trace_close_stage(io_unit)
+#endif
 
     ! Calculate soil albedo
 
@@ -129,6 +146,14 @@ contains
 
        end do
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "SoilAlbedo", "outputs", io_unit)
+    call log_r8_arr2d(io_unit, "albsoib", albsoib)
+    call log_r8_arr2d(io_unit, "albsoid", albsoid)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine SoilAlbedo

@@ -8,6 +8,9 @@ module MLPlantHydraulicsMod
   use abortutils, only : endrun
   use clm_varctl, only : iulog
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -41,6 +44,9 @@ contains
     integer  :: p                           ! Patch index for CLM g/l/c/p hierarchy
     integer  :: ic                          ! Aboveground layer index
     real(r8) :: rplant                      ! Aboveground plant hydraulic resistance (MPa.s.m2/mmol H2O)
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -53,6 +59,17 @@ contains
                                                   ! *** Output ***
     lsc        => mlcanopy_inst%lsc_profile    &  ! Canopy layer leaf-specific conductance (mmol H2O/m2 leaf/s/MPa)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("PlantResistance", io_call_id)
+    call io_trace_open_stage(io_call_id, "PlantResistance", "inputs", io_unit)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_int_arr1d(io_unit, "ncan", ncan)
+    call log_r8_arr1d(io_unit, "rsoil", rsoil)
+    call log_r8_arr2d(io_unit, "dpai", dpai)
+    call log_r8_arr2d(io_unit, "zs", zs)
+    call io_trace_close_stage(io_unit)
+#endif
 
     do fp = 1, num_filter
        p = filter(fp)
@@ -79,6 +96,13 @@ contains
 
        end do
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "PlantResistance", "outputs", io_unit)
+    call log_r8_arr2d(io_unit, "lsc", lsc)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine PlantResistance
@@ -129,6 +153,9 @@ contains
     real(r8) :: evap(nlevsoi)                    ! Maximum transpiration (mmol H2O/m2/s)
     real(r8) :: totevap                          ! Total maximum transpiration (mmol H2O/m2/s)
     real(r8) :: minlwp_SPA = -2._r8              ! Minimum leaf water potential (MPa) - legacy from original SPA implementation
+#ifdef IO_TRACE
+    integer :: io_call_id_2, io_unit_2
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -149,6 +176,18 @@ contains
     rsoil            => mlcanopy_inst%rsoil_soil          , &  ! Soil hydraulic resistance (MPa.s.m2/mmol H2O)
     soil_et_loss     => mlcanopy_inst%soil_et_loss_soil     &  ! Fraction of total transpiration from each soil layer (-)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("SoilResistance", io_call_id_2)
+    call io_trace_open_stage(io_call_id_2, "SoilResistance", "inputs", io_unit_2)
+    call log_int(io_unit_2, "num_filter", num_filter)
+    call log_r8_arr2d(io_unit_2, "smp_l", smp_l)
+    call log_r8_arr2d(io_unit_2, "hk_l", hk_l)
+    call log_r8_arr2d(io_unit_2, "rootfr", rootfr)
+    call log_r8_arr1d(io_unit_2, "lai", lai)
+    call log_r8_arr1d(io_unit_2, "root_biomass", root_biomass)
+    call io_trace_close_stage(io_unit_2)
+#endif
 
     head = denh2o * grav * 1.e-06_r8
 
@@ -251,6 +290,15 @@ contains
 
     end do
 
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_2, "SoilResistance", "outputs", io_unit_2)
+    call log_r8_arr1d(io_unit_2, "psis", psis)
+    call log_r8_arr1d(io_unit_2, "rsoil", rsoil)
+    call log_r8_arr2d(io_unit_2, "soil_et_loss", soil_et_loss)
+    call io_trace_close_stage(io_unit_2)
+    call io_trace_end(io_call_id_2)
+#endif
+
     end associate
   end subroutine SoilResistance
 
@@ -283,6 +331,9 @@ contains
     real(r8) :: y0                               ! Leaf water potential at beginning of timestep (MPa)
     real(r8) :: dy                               ! Change in leaf water potential (MPa)
     real(r8) :: a, b                             ! Intermediate calculation
+#ifdef IO_TRACE
+    integer :: io_call_id_3, io_unit_3
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -298,6 +349,20 @@ contains
                                                    ! *** Output ***
     lwp         => mlcanopy_inst%lwp_leaf       &  ! Leaf water potential (MPa)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("LeafWaterPotential", io_call_id_3)
+    call io_trace_open_stage(io_call_id_3, "LeafWaterPotential", "inputs", io_unit_3)
+    call log_int(io_unit_3, "num_filter", num_filter)
+    call log_int(io_unit_3, "il", il)
+    call log_r8_arr1d(io_unit_3, "psis", psis)
+    call log_r8_arr2d(io_unit_3, "dpai", dpai)
+    call log_r8_arr2d(io_unit_3, "zs", zs)
+    call log_r8_arr2d(io_unit_3, "lsc", lsc)
+    call log_r8_arr3d(io_unit_3, "trleaf", trleaf)
+    call log_r8_arr3d(io_unit_3, "lwp_bef", lwp_bef)
+    call io_trace_close_stage(io_unit_3)
+#endif
 
     head = denh2o * grav * 1.e-06_r8
 
@@ -325,6 +390,13 @@ contains
 
        end do
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id_3, "LeafWaterPotential", "outputs", io_unit_3)
+    call log_r8_arr3d(io_unit_3, "lwp", lwp)
+    call io_trace_close_stage(io_unit_3)
+    call io_trace_end(io_call_id_3)
+#endif
 
     end associate
   end subroutine LeafWaterPotential

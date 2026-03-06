@@ -8,6 +8,9 @@ module MLSoilFluxesMod
   use abortutils, only : endrun
   use clm_varctl, only : iulog
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -43,6 +46,9 @@ contains
     real(r8) :: dqsat                         ! Temperature derivative of saturation vapor pressure (mol/mol/K)
     real(r8) :: num1, num2, num3, num4, den   ! Intermediate terms
     real(r8) :: err                           ! Surface energy imbalance (W/m2)
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -69,6 +75,20 @@ contains
     tg          => mlcanopy_inst%tg_soil              , &  ! Soil surface temperature (K)
     eg          => mlcanopy_inst%eg_soil                &  ! Soil surface vapor pressure (Pa)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("SoilFluxes", io_call_id)
+    call io_trace_open_stage(io_call_id, "SoilFluxes", "inputs", io_unit)
+    call log_int(io_unit, "p", p)
+    call log_r8(io_unit, "rnsoi_p", rnsoi(p))
+    call log_r8(io_unit, "rhg_p", rhg(p))
+    call log_r8(io_unit, "soilres_p", soilres(p))
+    call log_r8(io_unit, "gac0_p", gac0(p))
+    call log_r8(io_unit, "tg_bef_p", tg_bef(p))
+    call log_r8(io_unit, "tair_p_1", tair(p,1))
+    call log_r8(io_unit, "eair_p_1", eair(p,1))
+    call io_trace_close_stage(io_unit)
+#endif
 
     ! Latent heat of vaporization
 
@@ -118,6 +138,18 @@ contains
     ! Water vapor flux: W/m2 -> mol H2O/m2/s
 
     etsoi(p) = lhsoi(p) / lambda
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "SoilFluxes", "outputs", io_unit)
+    call log_r8(io_unit, "shsoi_p", shsoi(p))
+    call log_r8(io_unit, "lhsoi_p", lhsoi(p))
+    call log_r8(io_unit, "gsoi_p", gsoi(p))
+    call log_r8(io_unit, "etsoi_p", etsoi(p))
+    call log_r8(io_unit, "tg_p", tg(p))
+    call log_r8(io_unit, "eg_p", eg(p))
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine SoilFluxes

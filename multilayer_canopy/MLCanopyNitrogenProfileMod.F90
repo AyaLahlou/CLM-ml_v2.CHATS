@@ -8,6 +8,9 @@ module MLCanopyNitrogenProfileMod
   use abortutils, only : endrun
   use clm_varctl, only : iulog
   use shr_kind_mod, only : r8 => shr_kind_r8
+#ifdef IO_TRACE
+  use io_logger
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -55,6 +58,9 @@ module MLCanopyNitrogenProfileMod
     real(r8) :: fn, fn_sun, fn_sha      ! Nitrogen factor integrated over canopy layer and sun/shade components
     real(r8) :: nscale_sun, nscale_sha  ! Nitrogen scaling coefficient for sun/shade leaves
     real(r8) :: numerical, analytical   ! Numerical and analytical values for vcmax25 canopy integration
+#ifdef IO_TRACE
+    integer :: io_call_id, io_unit
+#endif
     !---------------------------------------------------------------------
 
     associate ( &
@@ -80,6 +86,20 @@ module MLCanopyNitrogenProfileMod
     rd25_profile    => mlcanopy_inst%rd25_profile    , &  ! Canopy layer leaf respiration rate at 25C (umol CO2/m2/s)
     kp25_profile    => mlcanopy_inst%kp25_profile      &  ! Canopy layer C4 initial slope of CO2 response curve at 25C (mol/m2/s)
     )
+
+#ifdef IO_TRACE
+    call io_trace_begin("CanopyNitrogenProfile", io_call_id)
+    call io_trace_open_stage(io_call_id, "CanopyNitrogenProfile", "inputs", io_unit)
+    call log_int(io_unit, "num_filter", num_filter)
+    call log_int_arr1d(io_unit, "filter", filter(1:num_filter))
+    call log_r8_arr1d(io_unit, "tacclim", tacclim)
+    call log_int_arr1d(io_unit, "ncan", ncan)
+    call log_r8_arr1d(io_unit, "lai", lai)
+    call log_r8_arr1d(io_unit, "sai", sai)
+    call log_r8_arr2d(io_unit, "dpai", dpai)
+    call log_r8_arr2d(io_unit, "fracsun", fracsun)
+    call io_trace_close_stage(io_unit)
+#endif
 
     do fp = 1, num_filter
        p = filter(fp)
@@ -200,6 +220,20 @@ module MLCanopyNitrogenProfileMod
        end if
 
     end do
+
+#ifdef IO_TRACE
+    call io_trace_open_stage(io_call_id, "CanopyNitrogenProfile", "outputs", io_unit)
+    call log_r8_arr3d(io_unit, "vcmax25_leaf", vcmax25_leaf)
+    call log_r8_arr3d(io_unit, "jmax25_leaf", jmax25_leaf)
+    call log_r8_arr3d(io_unit, "rd25_leaf", rd25_leaf)
+    call log_r8_arr3d(io_unit, "kp25_leaf", kp25_leaf)
+    call log_r8_arr2d(io_unit, "vcmax25_profile", vcmax25_profile)
+    call log_r8_arr2d(io_unit, "jmax25_profile", jmax25_profile)
+    call log_r8_arr2d(io_unit, "rd25_profile", rd25_profile)
+    call log_r8_arr2d(io_unit, "kp25_profile", kp25_profile)
+    call io_trace_close_stage(io_unit)
+    call io_trace_end(io_call_id)
+#endif
 
     end associate
   end subroutine CanopyNitrogenProfile
