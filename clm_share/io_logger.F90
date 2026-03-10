@@ -30,6 +30,13 @@ module io_logger
   character(len=256), save :: trace_base_dir    = 'io_trace'
   logical, save          :: trace_initialized   = .false.
 
+  ! ---- per-subroutine call limiting ----
+  integer, parameter     :: max_traces_per_sub = 2
+  integer, parameter     :: max_tracked_subs   = 128
+  integer, save          :: num_tracked_subs   = 0
+  character(len=64), save :: tracked_sub_names(128)
+  integer, save          :: tracked_sub_counts(128) = 0
+
   ! ---- POSIX mkdir via C interop (avoids fork-per-call overhead) ----
   interface
     integer(c_int) function c_mkdir(path, mode) bind(C, name="mkdir")
@@ -59,6 +66,18 @@ contains
   ! Internal helpers
   ! =====================================================================
 
+  integer function find_sub_index(sub_name)
+    character(len=*), intent(in) :: sub_name
+    integer :: i
+    find_sub_index = 0
+    do i = 1, num_tracked_subs
+      if (trim(tracked_sub_names(i)) == trim(sub_name)) then
+        find_sub_index = i
+        return
+      end if
+    end do
+  end function
+
   subroutine make_dir(path)
     character(len=*), intent(in) :: path
     integer(c_int) :: ierr
@@ -80,8 +99,25 @@ contains
     character(len=*), intent(in)  :: sub_name
     integer,          intent(out) :: call_id
     character(len=512) :: dir_path
+    integer :: idx
 
     if (.not. trace_initialized) call io_trace_init()
+
+    ! --- per-subroutine call counting ---
+    idx = find_sub_index(sub_name)
+    if (idx == 0) then
+      ! first time seeing this subroutine
+      num_tracked_subs = num_tracked_subs + 1
+      idx = num_tracked_subs
+      tracked_sub_names(idx) = sub_name
+      tracked_sub_counts(idx) = 0
+    end if
+    tracked_sub_counts(idx) = tracked_sub_counts(idx) + 1
+
+    if (tracked_sub_counts(idx) > max_traces_per_sub) then
+      call_id = -1   ! sentinel: skip all logging for this call
+      return
+    end if
 
     global_call_counter = global_call_counter + 1
     call_id = global_call_counter
@@ -102,6 +138,11 @@ contains
     integer,          intent(out) :: funit
     character(len=512) :: fpath
 
+    if (call_id < 0) then
+      funit = -1
+      return
+    end if
+
     write(fpath, '(a,"/call_",i6.6,"__",a,"/",a,".txt")') &
       trim(trace_base_dir), call_id, trim(sub_name), trim(stage)
     open(newunit=funit, file=trim(fpath), status='replace', action='write')
@@ -109,6 +150,7 @@ contains
 
   subroutine io_trace_close_stage(funit)
     integer, intent(in) :: funit
+    if (funit < 0) return
     close(funit)
   end subroutine
 
@@ -120,6 +162,7 @@ contains
     integer,          intent(in) :: funit
     character(len=*), intent(in) :: name
     real(r8),         intent(in) :: val
+    if (funit < 0) return
     write(funit, '(a," = ",es23.15e3)') trim(name), val
   end subroutine
 
@@ -127,6 +170,7 @@ contains
     integer,          intent(in) :: funit
     character(len=*), intent(in) :: name
     integer,          intent(in) :: val
+    if (funit < 0) return
     write(funit, '(a," = ",i0)') trim(name), val
   end subroutine
 
@@ -134,6 +178,7 @@ contains
     integer,          intent(in) :: funit
     character(len=*), intent(in) :: name
     character(len=*), intent(in) :: val
+    if (funit < 0) return
     write(funit, '(a," = ",a)') trim(name), trim(val)
   end subroutine
 
@@ -146,6 +191,7 @@ contains
     character(len=*), intent(in) :: name
     real(r8),         intent(in) :: arr(:)
     integer :: i, n
+    if (funit < 0) return
     n = size(arr)
     write(funit, '(a," [r8_1d, n=",i0,"]")') trim(name), n
     do i = 1, n
@@ -159,6 +205,7 @@ contains
     character(len=*), intent(in) :: name
     real(r8),         intent(in) :: arr(:,:)
     integer :: i, j, m, n
+    if (funit < 0) return
     m = size(arr, 1)
     n = size(arr, 2)
     write(funit, '(a," [r8_2d, shape=",i0,"x",i0,"]")') trim(name), m, n
@@ -176,6 +223,7 @@ contains
     character(len=*), intent(in) :: name
     real(r8),         intent(in) :: arr(:,:,:)
     integer :: i, j, l, m, n, k
+    if (funit < 0) return
     m = size(arr, 1)
     n = size(arr, 2)
     k = size(arr, 3)
@@ -197,6 +245,7 @@ contains
     character(len=*), intent(in) :: name
     integer,          intent(in) :: arr(:)
     integer :: i, n
+    if (funit < 0) return
     n = size(arr)
     write(funit, '(a," [int_1d, n=",i0,"]")') trim(name), n
     do i = 1, n
