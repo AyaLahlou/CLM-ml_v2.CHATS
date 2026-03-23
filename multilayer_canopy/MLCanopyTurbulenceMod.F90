@@ -15,6 +15,10 @@ module MLCanopyTurbulenceMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: CanopyTurbulence        ! Main routine for canopy turbulence parameterization
   public :: LookupPsihatINI         ! Initialize the RSL psihat look-up tables
+  public :: phim_monin_obukhov      ! Monin-Obukhov phi stability function for momentum (public for testing)
+  public :: phic_monin_obukhov      ! Monin-Obukhov phi stability function for scalars (public for testing)
+  public :: psim_monin_obukhov      ! Monin-Obukhov psi stability function for momentum (public for testing)
+  public :: psic_monin_obukhov      ! Monin-Obukhov psi stability function for scalars (public for testing)
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: HF2008                 ! Harman & Finnigan (2008) roughness sublayer theory
@@ -23,10 +27,6 @@ module MLCanopyTurbulenceMod
   private :: GetBeta                ! beta = u* / u at canopy top
   private :: GetPrSc                ! Prandlt number (Pr) and Schmidt number (Sc) at canopy top
   private :: GetPsiRSL              ! RSL-modified stability functions
-  private :: phim_monin_obukhov     ! Monin-Obukhov phi stability function for momentum
-  private :: phic_monin_obukhov     ! Monin-Obukhov phi stability function for scalars
-  private :: psim_monin_obukhov     ! Monin-Obukhov psi stability function for momentum
-  private :: psic_monin_obukhov     ! Monin-Obukhov psi stability function for scalars
   private :: LookupPsihat           ! Determines the RSL function psihat as provided through a look-up table
   private :: RoughnessLength        ! Roughness length for momentum
   private :: WindProfile            ! Wind speed profile

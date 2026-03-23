@@ -14,11 +14,11 @@ module MLLeafPhotosynthesisMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: LeafPhotosynthesis       ! Leaf photosynthesis and stomatal conductance
+  public :: ft                       ! Photosynthesis temperature response (public for testing)
+  public :: fth                      ! Photosynthesis temperature inhibition (public for testing)
+  public :: fth25                    ! Scaling factor for photosynthesis temperature inhibition (public for testing)
   !
   ! !PRIVATE MEMBER FUNCTIONS:
-  private :: ft                      ! Photosynthesis temperature response
-  private :: fth                     ! Photosynthesis temperature inhibition
-  private :: fth25                   ! Scaling factor for photosynthesis temperature inhibition
   private :: CiFunc                  ! Calculate An and gs for a specified Ci
   private :: CiFuncGs                ! Calculate An for a specified gs
   private :: StomataOptimization     ! Photosynthesis and stomatal conductance with optimization
