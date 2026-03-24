@@ -31,21 +31,21 @@ MAIN_OBJS = $(filter-out $(OBJ)/CLMml.o, $(wildcard $(OBJ)/*.o))
 
 # List of test executables
 TARGETS = \
-  $(BIN)/test_quadratic.exe     \
-  $(BIN)/test_tridiag.exe       \
-  $(BIN)/test_log_gamma.exe     \
-  $(BIN)/test_beta_function.exe \
-  $(BIN)/test_beta_pdf.exe      \
-  $(BIN)/test_beta_cdf.exe      \
-  $(BIN)/test_SatVap.exe        \
-  $(BIN)/test_LatVap.exe        \
-  $(BIN)/test_ft.exe            \
-  $(BIN)/test_fth.exe           \
-  $(BIN)/test_fth25.exe         \
-  $(BIN)/test_phim_mo.exe       \
-  $(BIN)/test_psim_mo.exe       \
-  $(BIN)/test_shr_orb_params.exe \
-  $(BIN)/test_shr_orb_decl.exe
+  $(BIN)/test_MLMathToolsMod_quadratic.exe              \
+  $(BIN)/test_MLMathToolsMod_tridiag.exe                \
+  $(BIN)/test_MLMathToolsMod_log_gamma_function.exe     \
+  $(BIN)/test_MLMathToolsMod_beta_function.exe          \
+  $(BIN)/test_MLMathToolsMod_beta_distribution_pdf.exe  \
+  $(BIN)/test_MLMathToolsMod_beta_distribution_cdf.exe  \
+  $(BIN)/test_MLWaterVaporMod_SatVap.exe                \
+  $(BIN)/test_MLWaterVaporMod_LatVap.exe                \
+  $(BIN)/test_MLLeafPhotosynthesisMod_ft.exe            \
+  $(BIN)/test_MLLeafPhotosynthesisMod_fth.exe           \
+  $(BIN)/test_MLLeafPhotosynthesisMod_fth25.exe         \
+  $(BIN)/test_MLCanopyTurbulenceMod_phim_monin_obukhov.exe \
+  $(BIN)/test_MLCanopyTurbulenceMod_psim_monin_obukhov.exe \
+  $(BIN)/test_shr_orb_mod_shr_orb_params.exe            \
+  $(BIN)/test_shr_orb_mod_shr_orb_decl.exe
 
 .PHONY: all clean
 

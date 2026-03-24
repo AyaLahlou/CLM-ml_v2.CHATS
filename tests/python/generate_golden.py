@@ -36,14 +36,14 @@ GOLDEN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'gol
 
 CASES = {
     # ── MLMathToolsMod ──────────────────────────────────────────────────────
-    'test_quadratic.exe': [
+    'test_MLMathToolsMod_quadratic.exe': [
         {'a':  1.0, 'b':  -3.0, 'c':  2.0},   # roots 1, 2
         {'a':  1.0, 'b':  -2.0, 'c':  1.0},   # double root 1
         {'a':  1.0, 'b':   5.0, 'c':  6.0},   # roots -3, -2
         {'a':  2.0, 'b':  -7.0, 'c':  3.0},   # Vieta product check
         {'a':  3.0, 'b': -11.0, 'c':  6.0},   # Vieta sum check
     ],
-    'test_tridiag.exe': [
+    'test_MLMathToolsMod_tridiag.exe': [
         # 3×3 symmetric, solution [1,1,1]
         {'n': 3,
          'a': [0.0,  -1.0, -1.0],
@@ -63,7 +63,7 @@ CASES = {
          'c': [0.0, 0.0, 0.0],
          'r': [7.0, 3.0, 5.0]},
     ],
-    'test_log_gamma.exe': [
+    'test_MLMathToolsMod_log_gamma_function.exe': [
         {'x': 1.0},
         {'x': 2.0},
         {'x': 3.0},
@@ -72,7 +72,7 @@ CASES = {
         {'x': 5.0},
         {'x': 10.0},
     ],
-    'test_beta_function.exe': [
+    'test_MLMathToolsMod_beta_function.exe': [
         {'a': 1.0, 'b': 1.0},
         {'a': 0.5, 'b': 0.5},
         {'a': 2.0, 'b': 3.0},
@@ -80,7 +80,7 @@ CASES = {
         {'a': 5.0, 'b': 2.0},
         {'a': 3.7, 'b': 2.1},
     ],
-    'test_beta_pdf.exe': [
+    'test_MLMathToolsMod_beta_distribution_pdf.exe': [
         {'a': 1.0, 'b': 1.0, 'x': 0.1},
         {'a': 1.0, 'b': 1.0, 'x': 0.5},
         {'a': 1.0, 'b': 1.0, 'x': 0.9},
@@ -89,7 +89,7 @@ CASES = {
         {'a': 2.0, 'b': 5.0, 'x': 0.4},
         {'a': 2.0, 'b': 2.0, 'x': 0.5},
     ],
-    'test_beta_cdf.exe': [
+    'test_MLMathToolsMod_beta_distribution_cdf.exe': [
         {'a': 2.0, 'b': 3.0, 'x': 0.0},
         {'a': 2.0, 'b': 3.0, 'x': 1.0},
         {'a': 3.0, 'b': 3.0, 'x': 0.5},
@@ -101,7 +101,7 @@ CASES = {
         {'a': 2.0, 'b': 2.0, 'x': 0.25},
     ],
     # ── MLWaterVaporMod ─────────────────────────────────────────────────────
-    'test_SatVap.exe': [
+    'test_MLWaterVaporMod_SatVap.exe': [
         {'t': 273.15},   # 0°C, freezing point (water branch)
         {'t': 298.15},   # 25°C
         {'t': 373.15},   # 100°C (upper clamp limit)
@@ -112,7 +112,7 @@ CASES = {
         {'t': 280.0},
         {'t': 310.0},
     ],
-    'test_LatVap.exe': [
+    'test_MLWaterVaporMod_LatVap.exe': [
         {'t': 300.0},    # above freezing (evaporation)
         {'t': 260.0},    # below freezing (sublimation)
         {'t': 273.16},   # just above freezing
@@ -123,7 +123,7 @@ CASES = {
         {'t': 200.0},
     ],
     # ── MLLeafPhotosynthesisMod ─────────────────────────────────────────────
-    'test_ft.exe': [
+    'test_MLLeafPhotosynthesisMod_ft.exe': [
         {'tl': 298.15, 'ha':  65330.0},   # 25°C, vcmax ha → ft = 1
         {'tl': 308.15, 'ha':  65330.0},   # 35°C, vcmax
         {'tl': 308.15, 'ha':  43540.0},   # 35°C, jmax
@@ -135,7 +135,7 @@ CASES = {
         {'tl': 318.0,  'ha':  65330.0},
         {'tl': 300.0,  'ha':  0.0},       # ha=0 → ft = 1
     ],
-    'test_fth25.exe': [
+    'test_MLLeafPhotosynthesisMod_fth25.exe': [
         {'hd': 150000.0, 'se': 490.0},
         {'hd': 200000.0, 'se': 490.0},
         {'hd': 150000.0, 'se': 550.0},
@@ -144,7 +144,7 @@ CASES = {
         {'hd': 150000.0, 'se': 450.0},
         {'hd': 150000.0, 'se': 530.0},
     ],
-    'test_fth.exe': [
+    'test_MLLeafPhotosynthesisMod_fth.exe': [
         {'tl': 298.15, 'hd': 150000.0, 'se': 490.0, 'c': 1.0},
         {'tl': 308.15, 'hd': 150000.0, 'se': 490.0, 'c': 1.0},
         {'tl': 313.15, 'hd': 150000.0, 'se': 490.0, 'c': 1.0},
@@ -153,7 +153,7 @@ CASES = {
         {'tl': 310.0,  'hd': 150000.0, 'se': 490.0, 'c': 2.0},
     ],
     # ── MLCanopyTurbulenceMod ───────────────────────────────────────────────
-    'test_phim_mo.exe': [
+    'test_MLCanopyTurbulenceMod_phim_monin_obukhov.exe': [
         {'zeta':  0.0},
         {'zeta':  0.5},
         {'zeta':  1.0},
@@ -163,7 +163,7 @@ CASES = {
         {'zeta': -2.0},
         {'zeta':  0.2},
     ],
-    'test_psim_mo.exe': [
+    'test_MLCanopyTurbulenceMod_psim_monin_obukhov.exe': [
         {'zeta':  0.0},
         {'zeta':  0.5},
         {'zeta':  1.0},
@@ -175,13 +175,13 @@ CASES = {
         {'zeta':  0.3},
     ],
     # ── shr_orb_mod ─────────────────────────────────────────────────────────
-    'test_shr_orb_params.exe': [
+    'test_shr_orb_mod_shr_orb_params.exe': [
         {'iyear_AD': 2000},
         {'iyear_AD': 2007},
         {'iyear_AD': 1950},
         {'iyear_AD': 2050},
     ],
-    'test_shr_orb_decl.exe': [
+    'test_shr_orb_mod_shr_orb_decl.exe': [
         {'iyear_AD': 2007, 'calday':   1.0},   # Jan 1
         {'iyear_AD': 2007, 'calday':  80.0},   # vernal equinox
         {'iyear_AD': 2007, 'calday': 172.0},   # summer solstice
