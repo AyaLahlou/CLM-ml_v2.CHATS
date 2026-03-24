@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""
+Generate golden (trusted-run) data for all Fortran test executables.
+
+Usage (from the tests/ directory):
+    python python/generate_golden.py
+
+Or from anywhere:
+    python tests/python/generate_golden.py
+
+For each executable a JSON file is written to tests/golden/<exe_name>.json.
+Each JSON file records the inputs and outputs of a representative set of
+test cases captured from a verified, trusted build of the code.
+
+Re-run this script whenever the Fortran code is intentionally changed and
+the new outputs should become the new trusted reference.  Commit the updated
+JSON files alongside the code change so that future test_golden.py runs
+compare against the correct baseline.
+"""
+
+import json
+import os
+import sys
+from datetime import datetime, timezone
+
+# Allow 'from utils import ...' regardless of where the script is invoked from
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from utils import run_fortran  # noqa: E402
+
+GOLDEN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'golden')
+
+# ---------------------------------------------------------------------------
+# Representative input cases for each executable
+# Each entry in the list is a plain dict of namelist inputs.
+# ---------------------------------------------------------------------------
+
+CASES = {
+    # ── MLMathToolsMod ──────────────────────────────────────────────────────
+    'test_quadratic.exe': [
+        {'a':  1.0, 'b':  -3.0, 'c':  2.0},   # roots 1, 2
+        {'a':  1.0, 'b':  -2.0, 'c':  1.0},   # double root 1
+        {'a':  1.0, 'b':   5.0, 'c':  6.0},   # roots -3, -2
+        {'a':  2.0, 'b':  -7.0, 'c':  3.0},   # Vieta product check
+        {'a':  3.0, 'b': -11.0, 'c':  6.0},   # Vieta sum check
+    ],
+    'test_tridiag.exe': [
+        # 3×3 symmetric, solution [1,1,1]
+        {'n': 3,
+         'a': [0.0,  -1.0, -1.0],
+         'b': [2.0,   2.0,  2.0],
+         'c': [-1.0, -1.0,  0.0],
+         'r': [1.0,   0.0,  1.0]},
+        # 4×4 diagonal, solution [3,3,3,3]
+        {'n': 4,
+         'a': [0.0,  0.0,  0.0,  0.0],
+         'b': [2.0,  3.0,  4.0,  5.0],
+         'c': [0.0,  0.0,  0.0,  0.0],
+         'r': [6.0,  9.0, 12.0, 15.0]},
+        # 3×3 identity, solution = rhs
+        {'n': 3,
+         'a': [0.0, 0.0, 0.0],
+         'b': [1.0, 1.0, 1.0],
+         'c': [0.0, 0.0, 0.0],
+         'r': [7.0, 3.0, 5.0]},
+    ],
+    'test_log_gamma.exe': [
+        {'x': 1.0},
+        {'x': 2.0},
+        {'x': 3.0},
+        {'x': 0.5},
+        {'x': 0.3},
+        {'x': 5.0},
+        {'x': 10.0},
+    ],
+    'test_beta_function.exe': [
+        {'a': 1.0, 'b': 1.0},
+        {'a': 0.5, 'b': 0.5},
+        {'a': 2.0, 'b': 3.0},
+        {'a': 2.0, 'b': 5.0},
+        {'a': 5.0, 'b': 2.0},
+        {'a': 3.7, 'b': 2.1},
+    ],
+    'test_beta_pdf.exe': [
+        {'a': 1.0, 'b': 1.0, 'x': 0.1},
+        {'a': 1.0, 'b': 1.0, 'x': 0.5},
+        {'a': 1.0, 'b': 1.0, 'x': 0.9},
+        {'a': 2.0, 'b': 3.0, 'x': 0.3},
+        {'a': 3.0, 'b': 2.0, 'x': 0.7},
+        {'a': 2.0, 'b': 5.0, 'x': 0.4},
+        {'a': 2.0, 'b': 2.0, 'x': 0.5},
+    ],
+    'test_beta_cdf.exe': [
+        {'a': 2.0, 'b': 3.0, 'x': 0.0},
+        {'a': 2.0, 'b': 3.0, 'x': 1.0},
+        {'a': 3.0, 'b': 3.0, 'x': 0.5},
+        {'a': 2.0, 'b': 2.0, 'x': 0.1},
+        {'a': 2.0, 'b': 2.0, 'x': 0.3},
+        {'a': 2.0, 'b': 2.0, 'x': 0.5},
+        {'a': 2.0, 'b': 2.0, 'x': 0.7},
+        {'a': 2.0, 'b': 2.0, 'x': 0.9},
+        {'a': 2.0, 'b': 2.0, 'x': 0.25},
+    ],
+    # ── MLWaterVaporMod ─────────────────────────────────────────────────────
+    'test_SatVap.exe': [
+        {'t': 273.15},   # 0°C, freezing point (water branch)
+        {'t': 298.15},   # 25°C
+        {'t': 373.15},   # 100°C (upper clamp limit)
+        {'t': 263.15},   # -10°C (ice branch)
+        {'t': 198.15},   # -75°C (lower clamp limit)
+        {'t': 150.0},    # below lower clamp – should equal 198.15 K result
+        {'t': 400.0},    # above upper clamp – should equal 373.15 K result
+        {'t': 280.0},
+        {'t': 310.0},
+    ],
+    'test_LatVap.exe': [
+        {'t': 300.0},    # above freezing (evaporation)
+        {'t': 260.0},    # below freezing (sublimation)
+        {'t': 273.16},   # just above freezing
+        {'t': 273.14},   # just below freezing
+        {'t': 280.0},
+        {'t': 320.0},
+        {'t': 250.0},
+        {'t': 200.0},
+    ],
+    # ── MLLeafPhotosynthesisMod ─────────────────────────────────────────────
+    'test_ft.exe': [
+        {'tl': 298.15, 'ha':  65330.0},   # 25°C, vcmax ha → ft = 1
+        {'tl': 308.15, 'ha':  65330.0},   # 35°C, vcmax
+        {'tl': 308.15, 'ha':  43540.0},   # 35°C, jmax
+        {'tl': 308.15, 'ha':  79430.0},   # 35°C, kc
+        {'tl': 285.0,  'ha':  65330.0},   # below 25°C
+        {'tl': 310.0,  'ha':  65330.0},
+        {'tl': 280.0,  'ha':  65330.0},
+        {'tl': 290.0,  'ha':  65330.0},
+        {'tl': 318.0,  'ha':  65330.0},
+        {'tl': 300.0,  'ha':  0.0},       # ha=0 → ft = 1
+    ],
+    'test_fth25.exe': [
+        {'hd': 150000.0, 'se': 490.0},
+        {'hd': 200000.0, 'se': 490.0},
+        {'hd': 150000.0, 'se': 550.0},
+        {'hd': 140000.0, 'se': 490.0},
+        {'hd': 160000.0, 'se': 490.0},
+        {'hd': 150000.0, 'se': 450.0},
+        {'hd': 150000.0, 'se': 530.0},
+    ],
+    'test_fth.exe': [
+        {'tl': 298.15, 'hd': 150000.0, 'se': 490.0, 'c': 1.0},
+        {'tl': 308.15, 'hd': 150000.0, 'se': 490.0, 'c': 1.0},
+        {'tl': 313.15, 'hd': 150000.0, 'se': 490.0, 'c': 1.0},
+        {'tl': 323.15, 'hd': 150000.0, 'se': 490.0, 'c': 1.0},
+        {'tl': 310.0,  'hd': 150000.0, 'se': 490.0, 'c': 1.0},
+        {'tl': 310.0,  'hd': 150000.0, 'se': 490.0, 'c': 2.0},
+    ],
+    # ── MLCanopyTurbulenceMod ───────────────────────────────────────────────
+    'test_phim_mo.exe': [
+        {'zeta':  0.0},
+        {'zeta':  0.5},
+        {'zeta':  1.0},
+        {'zeta':  2.0},
+        {'zeta': -0.5},
+        {'zeta': -1.0},
+        {'zeta': -2.0},
+        {'zeta':  0.2},
+    ],
+    'test_psim_mo.exe': [
+        {'zeta':  0.0},
+        {'zeta':  0.5},
+        {'zeta':  1.0},
+        {'zeta':  2.0},
+        {'zeta': -0.1},
+        {'zeta': -0.5},
+        {'zeta': -1.0},
+        {'zeta': -2.0},
+        {'zeta':  0.3},
+    ],
+    # ── shr_orb_mod ─────────────────────────────────────────────────────────
+    'test_shr_orb_params.exe': [
+        {'iyear_AD': 2000},
+        {'iyear_AD': 2007},
+        {'iyear_AD': 1950},
+        {'iyear_AD': 2050},
+    ],
+    'test_shr_orb_decl.exe': [
+        {'iyear_AD': 2007, 'calday':   1.0},   # Jan 1
+        {'iyear_AD': 2007, 'calday':  80.0},   # vernal equinox
+        {'iyear_AD': 2007, 'calday': 172.0},   # summer solstice
+        {'iyear_AD': 2007, 'calday': 266.0},   # autumnal equinox
+        {'iyear_AD': 2007, 'calday': 355.0},   # winter solstice
+        {'iyear_AD': 2000, 'calday':  80.0},
+    ],
+}
+
+
+def generate(exe_name: str, cases: list) -> dict:
+    """Run one executable over all its cases and return the golden record."""
+    records = []
+    for inputs in cases:
+        outputs = run_fortran(exe_name, inputs)
+        records.append({'inputs': inputs, 'outputs': outputs})
+    return {
+        'generated_utc': datetime.now(timezone.utc).isoformat(),
+        'executable': exe_name,
+        'cases': records,
+    }
+
+
+def main():
+    os.makedirs(GOLDEN_DIR, exist_ok=True)
+
+    failed = []
+    for exe, cases in CASES.items():
+        print(f'  {exe} ... ', end='', flush=True)
+        try:
+            data = generate(exe, cases)
+            out_path = os.path.join(GOLDEN_DIR, exe.replace('.exe', '.json'))
+            with open(out_path, 'w') as f:
+                json.dump(data, f, indent=2)
+                f.write('\n')
+            print(f'OK  ({len(cases)} cases → {os.path.basename(out_path)})')
+        except Exception as exc:
+            print(f'FAILED: {exc}')
+            failed.append(exe)
+
+    print()
+    if failed:
+        print(f'ERROR: {len(failed)} executable(s) failed:')
+        for name in failed:
+            print(f'  {name}')
+        sys.exit(1)
+    else:
+        print(f'Golden data written to {os.path.abspath(GOLDEN_DIR)}/')
+        print('Commit the JSON files alongside your code changes.')
+
+
+if __name__ == '__main__':
+    main()
