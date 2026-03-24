@@ -189,6 +189,63 @@ CASES = {
         {'iyear_AD': 2007, 'calday': 355.0},   # winter solstice
         {'iyear_AD': 2000, 'calday':  80.0},
     ],
+    # ── MLMathToolsMod :: tridiag_2eq ───────────────────────────────────────
+    'test_MLMathToolsMod_tridiag_2eq.exe': [
+        # n=1, decoupled: T=d1/b11, q=d2/b22
+        {'n': 1, 'b11': [2.0], 'b22': [3.0], 'd1': [4.0], 'd2': [6.0]},
+        # n=1, coupled 2x2: T=1.6, q=1.8
+        {'n': 1,
+         'b11': [2.0], 'b12': [1.0], 'b21': [1.0], 'b22': [3.0],
+         'd1': [5.0], 'd2': [7.0]},
+        # n=2, decoupled tridiag: T=[1,1], q=[1,1]
+        {'n': 2,
+         'a1': [0.0, -1.0], 'b11': [2.0, 2.0], 'b12': [0.0, 0.0],
+         'c1': [-1.0, 0.0], 'd1': [1.0, 1.0],
+         'a2': [0.0, -1.0], 'b21': [0.0, 0.0], 'b22': [3.0, 3.0],
+         'c2': [-1.0, 0.0], 'd2': [2.0, 2.0]},
+        # n=2, coupled diagonal: T=[1.6,1.6], q=[1.8,1.8]
+        {'n': 2,
+         'a1': [0.0, 0.0], 'b11': [2.0, 2.0], 'b12': [1.0, 1.0],
+         'c1': [0.0, 0.0], 'd1': [5.0, 5.0],
+         'a2': [0.0, 0.0], 'b21': [1.0, 1.0], 'b22': [3.0, 3.0],
+         'c2': [0.0, 0.0], 'd2': [7.0, 7.0]},
+    ],
+    # ── MLLeafPhotosynthesisMod :: RealizedRate ─────────────────────────────
+    'test_MLLeafPhotosynthesisMod_RealizedRate.exe': [
+        # colim_type=0, C3: minimum rate
+        {'c3psn': 1.0, 'ac':  5.0, 'aj': 15.0, 'ap': 20.0, 'colim_type_in': 0},
+        {'c3psn': 1.0, 'ac': 15.0, 'aj':  8.0, 'ap': 20.0, 'colim_type_in': 0},
+        {'c3psn': 1.0, 'ac': 10.0, 'aj': 10.0, 'ap': 20.0, 'colim_type_in': 0},
+        # colim_type=0, C4: minimum rate including ap
+        {'c3psn': 0.0, 'ac': 10.0, 'aj': 12.0, 'ap':  4.0, 'colim_type_in': 0},
+        # colim_type=1, C3: co-limited
+        {'c3psn': 1.0, 'ac': 10.0, 'aj': 10.0, 'ap': 20.0, 'colim_type_in': 1},
+        {'c3psn': 1.0, 'ac': 10.0, 'aj':  5.0, 'ap': 20.0, 'colim_type_in': 1},
+        {'c3psn': 1.0, 'ac':  1.0, 'aj': 20.0, 'ap': 30.0, 'colim_type_in': 1},
+        # colim_type=1, C4
+        {'c3psn': 0.0, 'ac': 10.0, 'aj':  8.0, 'ap':  6.0, 'colim_type_in': 1},
+    ],
+    # ── MLCanopyTurbulenceMod :: GetBeta ────────────────────────────────────
+    'test_MLCanopyTurbulenceMod_GetBeta.exe': [
+        {'beta_neutral': 0.3,  'LcL':  0.0},   # neutral
+        {'beta_neutral': 0.3,  'LcL': -1.0},   # unstable
+        {'beta_neutral': 0.3,  'LcL':  1.0},   # stable
+        {'beta_neutral': 0.3,  'LcL': -0.5},
+        {'beta_neutral': 0.3,  'LcL':  0.5},
+        {'beta_neutral': 0.25, 'LcL':  0.0},
+        {'beta_neutral': 0.35, 'LcL': -2.0},
+        {'beta_neutral': 0.3,  'LcL':  2.0},
+    ],
+    # ── MLCanopyTurbulenceMod :: GetPrSc ────────────────────────────────────
+    'test_MLCanopyTurbulenceMod_GetPrSc.exe': [
+        {'beta_neutral': 0.3,  'LcL':  0.0, 'sparse_canopy_type_in': 0},
+        {'beta_neutral': 0.3,  'LcL':  1.0, 'sparse_canopy_type_in': 0},
+        {'beta_neutral': 0.3,  'LcL': -1.0, 'sparse_canopy_type_in': 0},
+        {'beta_neutral': 0.3,  'LcL':  0.5, 'sparse_canopy_type_in': 0},
+        {'beta_neutral': 0.3,  'LcL': -0.5, 'sparse_canopy_type_in': 0},
+        {'beta_neutral': 0.3,  'LcL':  0.0, 'sparse_canopy_type_in': 1},
+        {'beta_neutral': 0.35, 'LcL':  0.5, 'sparse_canopy_type_in': 1},
+    ],
 }
 
 

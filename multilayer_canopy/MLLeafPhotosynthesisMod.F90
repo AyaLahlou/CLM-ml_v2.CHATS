@@ -17,6 +17,7 @@ module MLLeafPhotosynthesisMod
   public :: ft                       ! Photosynthesis temperature response (public for testing)
   public :: fth                      ! Photosynthesis temperature inhibition (public for testing)
   public :: fth25                    ! Scaling factor for photosynthesis temperature inhibition (public for testing)
+  public :: RealizedRate             ! Photosynthesis colimitation: minimum or smooth co-limited rate (public for testing)
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: CiFunc                  ! Calculate An and gs for a specified Ci

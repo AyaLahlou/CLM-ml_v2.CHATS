@@ -19,6 +19,8 @@ module MLCanopyTurbulenceMod
   public :: phic_monin_obukhov      ! Monin-Obukhov phi stability function for scalars (public for testing)
   public :: psim_monin_obukhov      ! Monin-Obukhov psi stability function for momentum (public for testing)
   public :: psic_monin_obukhov      ! Monin-Obukhov psi stability function for scalars (public for testing)
+  public :: GetBeta                  ! beta = u*/u(h) at canopy top (public for testing)
+  public :: GetPrSc                  ! Prandtl/Schmidt number at canopy top (public for testing)
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: HF2008                 ! Harman & Finnigan (2008) roughness sublayer theory

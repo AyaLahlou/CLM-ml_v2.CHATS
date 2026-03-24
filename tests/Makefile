@@ -45,7 +45,11 @@ TARGETS = \
   $(BIN)/test_MLCanopyTurbulenceMod_phim_monin_obukhov.exe \
   $(BIN)/test_MLCanopyTurbulenceMod_psim_monin_obukhov.exe \
   $(BIN)/test_shr_orb_mod_shr_orb_params.exe            \
-  $(BIN)/test_shr_orb_mod_shr_orb_decl.exe
+  $(BIN)/test_shr_orb_mod_shr_orb_decl.exe              \
+  $(BIN)/test_MLMathToolsMod_tridiag_2eq.exe            \
+  $(BIN)/test_MLLeafPhotosynthesisMod_RealizedRate.exe  \
+  $(BIN)/test_MLCanopyTurbulenceMod_GetBeta.exe         \
+  $(BIN)/test_MLCanopyTurbulenceMod_GetPrSc.exe
 
 .PHONY: all clean
 
