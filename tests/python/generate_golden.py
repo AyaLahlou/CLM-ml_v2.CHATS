@@ -335,6 +335,51 @@ CASES = {
         {'kn': 0.3, 'pai_above': 0.0, 'dpai': 0.5, 'kb': 0.7,
          'clump_fac': 0.9, 'fracsun': 0.6, 'tbi': 1.0, 'leaf_optics_type_in': 0},
     ],
+    # ── MLCanopyNitrogenProfileMod :: CanopyNitrogenProfile (parent-level) ──
+    # Each case exercises the full multi-layer nitrogen integration loop and
+    # validates sum(vcmax25*dpai) == vcmax25top*(1-exp(-kn*totalPAI))/kn.
+    'test_MLCanopyNitrogenProfileMod_CanopyNitrogenProfile.exe': [
+        # 3-layer uniform canopy, leaf_optics_type=0
+        {'ncan': 3,
+         'dpai':    [0.5, 0.5, 0.5,   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'fracsun': [0.20, 0.35, 0.50, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'kb':      [0.5,  0.5,  0.5,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'tbi':     [0.6065306597, 0.7788007831, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'clump_fac': 1.0, 'kn': 0.3, 'vcmax25top': 60.0,
+         'lai': 1.5, 'sai': 0.0, 'leaf_optics_type_in': 0},
+        # 3-layer uniform canopy, leaf_optics_type=1 (thin-layer)
+        {'ncan': 3,
+         'dpai':    [0.5, 0.5, 0.5,   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'fracsun': [0.20, 0.35, 0.50, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'kb':      [0.5,  0.5,  0.5,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'tbi':     [0.6065306597, 0.7788007831, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'clump_fac': 1.0, 'kn': 0.3, 'vcmax25top': 60.0,
+         'lai': 1.5, 'sai': 0.0, 'leaf_optics_type_in': 1},
+        # 5-layer non-uniform canopy
+        {'ncan': 5,
+         'dpai':    [0.2, 0.3, 0.4, 0.4, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'fracsun': [0.10, 0.20, 0.30, 0.40, 0.55, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'kb':      [0.45, 0.50, 0.50, 0.52, 0.48, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'tbi':     [0.4340, 0.5117, 0.6188, 0.7560, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'clump_fac': 0.85, 'kn': 0.25, 'vcmax25top': 80.0,
+         'lai': 1.5, 'sai': 0.0, 'leaf_optics_type_in': 0},
+        # Single layer (reduces to CalcNitrogenScale)
+        {'ncan': 1,
+         'dpai':    [1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'fracsun': [0.4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'kb':      [0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'tbi':     [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'clump_fac': 1.0, 'kn': 0.3, 'vcmax25top': 60.0,
+         'lai': 1.5, 'sai': 0.0, 'leaf_optics_type_in': 0},
+        # High kn (steep nitrogen gradient)
+        {'ncan': 4,
+         'dpai':    [0.4, 0.4, 0.4, 0.4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'fracsun': [0.15, 0.25, 0.35, 0.50, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'kb':      [0.5,  0.5,  0.5,  0.5,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'tbi':     [0.3012, 0.4493, 0.6703, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'clump_fac': 1.0, 'kn': 1.5, 'vcmax25top': 50.0,
+         'lai': 1.6, 'sai': 0.0, 'leaf_optics_type_in': 0},
+    ],
 }
 
 

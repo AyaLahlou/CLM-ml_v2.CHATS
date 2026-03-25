@@ -55,7 +55,8 @@ TARGETS = \
   $(BIN)/test_MLCanopyWaterMod_WettedFraction.exe       \
   $(BIN)/test_MLLeafHeatCapacityMod_LeafHeatCapacity.exe \
   $(BIN)/test_MLLeafBoundaryLayerMod_LeafBoundaryLayer.exe \
-  $(BIN)/test_MLCanopyNitrogenProfileMod_NitrogenScale.exe
+  $(BIN)/test_MLCanopyNitrogenProfileMod_NitrogenScale.exe \
+  $(BIN)/test_MLCanopyNitrogenProfileMod_CanopyNitrogenProfile.exe
 
 .PHONY: all clean
 
