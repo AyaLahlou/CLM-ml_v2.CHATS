@@ -293,6 +293,48 @@ CASES = {
         {'sla': 0.01},   # very low SLA
         {'sla': 0.10},   # very high SLA
     ],
+    # ── MLLeafBoundaryLayerMod :: CalcLeafBoundaryLayer ─────────────────────
+    'test_MLLeafBoundaryLayerMod_LeafBoundaryLayer.exe': [
+        # Standard conditions, gb_type=2 (forced lam+turb)
+        {'d': 0.04, 'u': 2.0,  'tleaf': 300.0, 'tair': 298.0, 'tref': 298.0,
+         'pref': 101325.0, 'rhomol': 41.5, 'gb_type_in': 2},
+        # Low wind speed (gbh floored at gbh_min)
+        {'d': 0.04, 'u': 0.0,  'tleaf': 300.0, 'tair': 298.0, 'tref': 298.0,
+         'pref': 101325.0, 'rhomol': 41.5, 'gb_type_in': 1},
+        # High wind speed (turbulent regime)
+        {'d': 0.04, 'u': 10.0, 'tleaf': 300.0, 'tair': 298.0, 'tref': 298.0,
+         'pref': 101325.0, 'rhomol': 41.5, 'gb_type_in': 2},
+        # Free convection enabled (gb_type=3), tleaf > tair
+        {'d': 0.04, 'u': 2.0,  'tleaf': 305.0, 'tair': 298.0, 'tref': 298.0,
+         'pref': 101325.0, 'rhomol': 41.5, 'gb_type_in': 3},
+        # No buoyancy (tleaf=tair), gb_type=3 should equal gb_type=2
+        {'d': 0.04, 'u': 2.0,  'tleaf': 298.0, 'tair': 298.0, 'tref': 298.0,
+         'pref': 101325.0, 'rhomol': 41.5, 'gb_type_in': 3},
+        # Small leaf (needleleaf)
+        {'d': 0.002, 'u': 2.0, 'tleaf': 300.0, 'tair': 298.0, 'tref': 298.0,
+         'pref': 101325.0, 'rhomol': 41.5, 'gb_type_in': 2},
+    ],
+    # ── MLCanopyNitrogenProfileMod :: CalcNitrogenScale ─────────────────────
+    'test_MLCanopyNitrogenProfileMod_NitrogenScale.exe': [
+        # leaf_optics_type=0, canopy top (pai_above=0, tbi=1)
+        {'kn': 0.3, 'pai_above': 0.0, 'dpai': 0.5, 'kb': 0.5,
+         'clump_fac': 0.8, 'fracsun': 0.4, 'tbi': 1.0, 'leaf_optics_type_in': 0},
+        # leaf_optics_type=0, mid-canopy
+        {'kn': 0.3, 'pai_above': 1.0, 'dpai': 0.4, 'kb': 0.5,
+         'clump_fac': 0.8, 'fracsun': 0.3, 'tbi': 0.607, 'leaf_optics_type_in': 0},
+        # leaf_optics_type=0, deeper layer
+        {'kn': 0.3, 'pai_above': 2.0, 'dpai': 0.4, 'kb': 0.5,
+         'clump_fac': 0.8, 'fracsun': 0.2, 'tbi': 0.368, 'leaf_optics_type_in': 0},
+        # leaf_optics_type=1 (thin-layer): nscale_sun == nscale_sha
+        {'kn': 0.3, 'pai_above': 0.0, 'dpai': 0.5, 'kb': 0.5,
+         'clump_fac': 0.8, 'fracsun': 0.4, 'tbi': 1.0, 'leaf_optics_type_in': 1},
+        # Different kn
+        {'kn': 0.5, 'pai_above': 0.0, 'dpai': 0.5, 'kb': 0.5,
+         'clump_fac': 0.8, 'fracsun': 0.4, 'tbi': 1.0, 'leaf_optics_type_in': 0},
+        # High fracsun (bright top-of-canopy)
+        {'kn': 0.3, 'pai_above': 0.0, 'dpai': 0.5, 'kb': 0.7,
+         'clump_fac': 0.9, 'fracsun': 0.6, 'tbi': 1.0, 'leaf_optics_type_in': 0},
+    ],
 }
 
 

@@ -14,6 +14,7 @@ module MLLeafBoundaryLayerMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: LeafBoundaryLayer
+  public :: CalcLeafBoundaryLayer
   !-----------------------------------------------------------------------
 
 contains
@@ -168,5 +169,83 @@ contains
 
     end associate
   end subroutine LeafBoundaryLayer
+
+  !-----------------------------------------------------------------------
+  subroutine CalcLeafBoundaryLayer (d, u, tleaf, tair, tref, pref, rhomol, gb_type_in, gbh, gbv, gbc)
+    !
+    ! !DESCRIPTION:
+    ! Scalar leaf boundary layer conductance helper for testing.
+    ! Mirrors the physics of LeafBoundaryLayer for a single leaf.
+    !
+    ! !USES:
+    use clm_varcon, only : tfrz, grav
+    use MLclm_varcon, only : visc0, dh0, dv0, dc0, gb_factor, gbh_min
+    !
+    ! !ARGUMENTS:
+    implicit none
+    real(r8), intent(in)  :: d         ! Leaf dimension (m)
+    real(r8), intent(in)  :: u         ! Wind speed (m/s)
+    real(r8), intent(in)  :: tleaf     ! Leaf temperature (K)
+    real(r8), intent(in)  :: tair      ! Air temperature at leaf (K)
+    real(r8), intent(in)  :: tref      ! Air temperature at reference height (K)
+    real(r8), intent(in)  :: pref      ! Air pressure at reference height (Pa)
+    real(r8), intent(in)  :: rhomol    ! Molar density of air (mol/m3)
+    integer,  intent(in)  :: gb_type_in  ! Convection regime selector (1/2/3)
+    real(r8), intent(out) :: gbh       ! Boundary layer conductance: heat (mol/m2/s)
+    real(r8), intent(out) :: gbv       ! Boundary layer conductance: H2O (mol/m2/s)
+    real(r8), intent(out) :: gbc       ! Boundary layer conductance: CO2 (mol/m2/s)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: visc, dh, dv, dc, fac
+    real(r8) :: nu, pr, re, gr
+    real(r8) :: gbh_lam, gbv_lam, gbc_lam
+    real(r8) :: gbh_turb, gbv_turb, gbc_turb
+    real(r8) :: gbh_free, gbv_free, gbc_free
+    !---------------------------------------------------------------------
+
+    fac  = 101325._r8 / pref * (tref / tfrz)**1.81_r8
+    visc = visc0 * fac
+    dh   = dh0   * fac
+    dv   = dv0   * fac
+    dc   = dc0   * fac
+
+    re = u * d / visc
+    pr = visc / dh
+    gr = grav * d**3 * max(tleaf - tair, 0._r8) / (tair * visc * visc)
+
+    ! Laminar forced convection
+    nu       = gb_factor * 0.66_r8 * pr**0.33_r8 * re**0.5_r8
+    gbh_lam  = (dh * nu / d) * rhomol ; gbh_lam  = max(gbh_lam,  gbh_min)
+    gbv_lam  = gbh_lam  * (dv / dh)**0.67_r8
+    gbc_lam  = gbh_lam  * (dc / dh)**0.67_r8
+
+    ! Turbulent forced convection
+    nu       = gb_factor * 0.036_r8 * pr**0.33_r8 * re**0.8_r8
+    gbh_turb = (dh * nu / d) * rhomol ; gbh_turb = max(gbh_turb, gbh_min)
+    gbv_turb = gbh_turb * (dv / dh)**0.67_r8
+    gbc_turb = gbh_turb * (dc / dh)**0.67_r8
+
+    ! Free convection
+    nu       = 0.54_r8 * pr**0.25_r8 * gr**0.25_r8
+    gbh_free = (dh * nu / d) * rhomol
+    gbv_free = gbh_free * (dv / dh)**0.75_r8
+    gbc_free = gbh_free * (dc / dh)**0.75_r8
+
+    select case (gb_type_in)
+    case (1)
+       gbh = gbh_lam  ; gbv = gbv_lam  ; gbc = gbc_lam
+    case (2)
+       gbh = max(gbh_lam, gbh_turb)
+       gbv = max(gbv_lam, gbv_turb)
+       gbc = max(gbc_lam, gbc_turb)
+    case (3)
+       gbh = max(gbh_lam, gbh_turb) + gbh_free
+       gbv = max(gbv_lam, gbv_turb) + gbv_free
+       gbc = max(gbc_lam, gbc_turb) + gbc_free
+    case default
+       call endrun (msg=' ERROR: CalcLeafBoundaryLayer: gb_type_in not valid')
+    end select
+
+  end subroutine CalcLeafBoundaryLayer
 
 end module MLLeafBoundaryLayerMod

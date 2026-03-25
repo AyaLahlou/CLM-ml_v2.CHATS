@@ -14,6 +14,7 @@ module MLCanopyNitrogenProfileMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: CanopyNitrogenProfile
+  public :: CalcNitrogenScale
   !-----------------------------------------------------------------------
 
   contains
@@ -203,5 +204,49 @@ module MLCanopyNitrogenProfileMod
 
     end associate
   end subroutine CanopyNitrogenProfile
+
+  !-----------------------------------------------------------------------
+  subroutine CalcNitrogenScale (kn, pai_above, dpai, kb, clump_fac, fracsun, tbi, &
+                                leaf_optics_type_in, nscale_sun, nscale_sha)
+    !
+    ! !DESCRIPTION:
+    ! Scalar nitrogen scaling helper for testing.
+    ! Computes nscale_sun and nscale_sha for a single canopy layer.
+    !
+    ! !ARGUMENTS:
+    implicit none
+    real(r8), intent(in)  :: kn                 ! Leaf nitrogen decay coefficient
+    real(r8), intent(in)  :: pai_above           ! Cumulative PAI above this layer
+    real(r8), intent(in)  :: dpai               ! Layer plant area index (m2/m2)
+    real(r8), intent(in)  :: kb                 ! Direct beam extinction coefficient
+    real(r8), intent(in)  :: clump_fac          ! Foliage clumping index (-)
+    real(r8), intent(in)  :: fracsun            ! Sunlit fraction of layer (-)
+    real(r8), intent(in)  :: tbi                ! Cumulative direct beam transmittance (-)
+    integer,  intent(in)  :: leaf_optics_type_in  ! 0 = Bonan (2021); 1 = thin-layer
+    real(r8), intent(out) :: nscale_sun         ! Nitrogen scale factor: sunlit
+    real(r8), intent(out) :: nscale_sha         ! Nitrogen scale factor: shaded
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: fn, fn_sun, fn_sha
+    !---------------------------------------------------------------------
+
+    fn = exp(-kn * pai_above) * (1._r8 - exp(-kn * dpai)) / kn
+
+    select case (leaf_optics_type_in)
+    case (0)
+       fn_sun = clump_fac / (kn + kb * clump_fac) &
+              * exp(-kn * pai_above) * tbi &
+              * (1._r8 - exp(-(kn + kb * clump_fac) * dpai))
+       fn_sha = fn - fn_sun
+       nscale_sun = fn_sun / (fracsun * dpai)
+       nscale_sha = fn_sha / ((1._r8 - fracsun) * dpai)
+    case (1)
+       nscale_sun = fn / dpai
+       nscale_sha = nscale_sun
+    case default
+       call endrun (msg=' ERROR: CalcNitrogenScale: leaf_optics_type_in not valid')
+    end select
+
+  end subroutine CalcNitrogenScale
 
 end module MLCanopyNitrogenProfileMod

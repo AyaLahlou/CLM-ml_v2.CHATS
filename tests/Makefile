@@ -53,7 +53,9 @@ TARGETS = \
   $(BIN)/test_MLRungeKuttaMod_RungeKuttaIni.exe         \
   $(BIN)/test_MLCanopyTurbulenceMod_GetPsiRSL.exe       \
   $(BIN)/test_MLCanopyWaterMod_WettedFraction.exe       \
-  $(BIN)/test_MLLeafHeatCapacityMod_LeafHeatCapacity.exe
+  $(BIN)/test_MLLeafHeatCapacityMod_LeafHeatCapacity.exe \
+  $(BIN)/test_MLLeafBoundaryLayerMod_LeafBoundaryLayer.exe \
+  $(BIN)/test_MLCanopyNitrogenProfileMod_NitrogenScale.exe
 
 .PHONY: all clean
 
