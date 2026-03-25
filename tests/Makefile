@@ -49,7 +49,11 @@ TARGETS = \
   $(BIN)/test_MLMathToolsMod_tridiag_2eq.exe            \
   $(BIN)/test_MLLeafPhotosynthesisMod_RealizedRate.exe  \
   $(BIN)/test_MLCanopyTurbulenceMod_GetBeta.exe         \
-  $(BIN)/test_MLCanopyTurbulenceMod_GetPrSc.exe
+  $(BIN)/test_MLCanopyTurbulenceMod_GetPrSc.exe         \
+  $(BIN)/test_MLRungeKuttaMod_RungeKuttaIni.exe         \
+  $(BIN)/test_MLCanopyTurbulenceMod_GetPsiRSL.exe       \
+  $(BIN)/test_MLCanopyWaterMod_WettedFraction.exe       \
+  $(BIN)/test_MLLeafHeatCapacityMod_LeafHeatCapacity.exe
 
 .PHONY: all clean
 

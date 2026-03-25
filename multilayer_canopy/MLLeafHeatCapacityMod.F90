@@ -14,6 +14,7 @@ module MLLeafHeatCapacityMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: LeafHeatCapacity
+  public :: CalcLeafHeatCapacity   ! Scalar helper: cpleaf from sla (public for testing)
   !-----------------------------------------------------------------------
 
 contains
@@ -81,5 +82,38 @@ contains
 
     end associate
   end subroutine LeafHeatCapacity
+
+  !-----------------------------------------------------------------------
+  function CalcLeafHeatCapacity (sla) result(cpleaf)
+    !
+    ! !DESCRIPTION:
+    ! Scalar helper: compute leaf heat capacity (J/K/m2 leaf) from specific
+    ! leaf area.  Applies the same formula as the per-layer body of
+    ! LeafHeatCapacity: see Bonan et al. (2018) GMD eq. (A29).
+    ! (public for testing)
+    !
+    ! !USES:
+    use clm_varcon,   only : cpliq
+    use MLclm_varcon, only : cpbio, fcarbon, fwater
+    !
+    ! !ARGUMENTS:
+    implicit none
+    real(r8), intent(in) :: sla    ! Specific leaf area at canopy top (m2/gC)
+    real(r8)             :: cpleaf ! Leaf heat capacity (J/K/m2 leaf)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: lma          ! Leaf carbon mass per area (kg C/m2 leaf)
+    real(r8) :: dry_weight   ! Leaf dry mass per area   (kg DM/m2 leaf)
+    real(r8) :: fresh_weight ! Leaf fresh mass per area  (kg FM/m2 leaf)
+    real(r8) :: leaf_water   ! Leaf water mass per area  (kg H2O/m2 leaf)
+    !---------------------------------------------------------------------
+
+    lma          = 1._r8 / sla * 0.001_r8           ! m2/gC -> kg C/m2
+    dry_weight   = lma / fcarbon                     ! kg C/m2 -> kg DM/m2
+    fresh_weight = dry_weight / (1._r8 - fwater)     ! kg DM/m2 -> kg FM/m2
+    leaf_water   = fwater * fresh_weight             ! kg H2O/m2 leaf
+    cpleaf       = cpbio * dry_weight + cpliq * leaf_water
+
+  end function CalcLeafHeatCapacity
 
 end module MLLeafHeatCapacityMod

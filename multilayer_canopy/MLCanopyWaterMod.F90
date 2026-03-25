@@ -16,6 +16,7 @@ module MLCanopyWaterMod
   public :: CanopyInterception     ! Interception and throughfall
   public :: CanopyEvaporation      ! Update canopy intercepted water for evaporation
   public :: CanopyWettedFraction   ! Wetted fraction of canopy
+  public :: CalcWettedFraction     ! Scalar helper: fwet and fdry for one layer (public for testing)
   !-----------------------------------------------------------------------
 
 contains
@@ -85,6 +86,42 @@ contains
 
     end associate
   end subroutine CanopyWettedFraction
+
+  !-----------------------------------------------------------------------
+  subroutine CalcWettedFraction (h2ocan, dpai, dlai, fwet, fdry)
+    !
+    ! !DESCRIPTION:
+    ! Scalar helper: compute wetted and dry fractions for a single canopy layer.
+    ! Mirrors the per-layer logic of CanopyWettedFraction using the module
+    ! constants dewmx, fwet_exponent, and maximum_leaf_wetted_fraction.
+    ! (public for testing)
+    !
+    ! !USES:
+    use MLclm_varcon, only : dewmx, maximum_leaf_wetted_fraction, fwet_exponent
+    !
+    ! !ARGUMENTS:
+    implicit none
+    real(r8), intent(in)  :: h2ocan  ! Intercepted water on layer (kg H2O/m2)
+    real(r8), intent(in)  :: dpai    ! Plant area index of layer (m2/m2)
+    real(r8), intent(in)  :: dlai    ! Leaf area index of layer (m2/m2)
+    real(r8), intent(out) :: fwet    ! Wetted fraction of plant area (-)
+    real(r8), intent(out) :: fdry    ! Green-and-dry fraction of plant area (-)
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: h2ocanmx             ! Maximum water capacity of layer (kg H2O/m2)
+    !---------------------------------------------------------------------
+
+    if (dpai > 0._r8) then
+       h2ocanmx = dewmx * dpai
+       fwet = max((h2ocan / h2ocanmx), 0._r8) ** fwet_exponent
+       fwet = min(fwet, maximum_leaf_wetted_fraction)
+       fdry = (1._r8 - fwet) * (dlai / dpai)
+    else
+       fwet = 0._r8
+       fdry = 0._r8
+    end if
+
+  end subroutine CalcWettedFraction
 
   !-----------------------------------------------------------------------
   subroutine CanopyInterception (num_filter, filter, mlcanopy_inst)

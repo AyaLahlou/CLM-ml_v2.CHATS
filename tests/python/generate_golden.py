@@ -246,6 +246,53 @@ CASES = {
         {'beta_neutral': 0.3,  'LcL':  0.0, 'sparse_canopy_type_in': 1},
         {'beta_neutral': 0.35, 'LcL':  0.5, 'sparse_canopy_type_in': 1},
     ],
+    # ── MLRungeKuttaMod :: RungeKuttaIni ────────────────────────────────────
+    # runge_kutta_type=41 (4th-order Kutta) is a compile-time parameter;
+    # no runtime inputs are needed — one case with empty inputs suffices.
+    'test_MLRungeKuttaMod_RungeKuttaIni.exe': [
+        {},   # no inputs; outputs are the Butcher tableau for 4th-order Kutta
+    ],
+    # ── MLCanopyTurbulenceMod :: GetPsiRSL ──────────────────────────────────
+    'test_MLCanopyTurbulenceMod_GetPsiRSL.exe': [
+        # za = hc: exact cancellation → psim = vkc/beta = 0.4/0.3, psic = 0
+        {'za': 20.0, 'hc': 20.0, 'disp': 12.0, 'obu': -100.0,
+         'beta': 0.3, 'PrSc': 0.5},
+        # za above canopy, unstable
+        {'za': 30.0, 'hc': 20.0, 'disp': 12.0, 'obu': -100.0,
+         'beta': 0.3, 'PrSc': 0.5},
+        # za above canopy, stable
+        {'za': 30.0, 'hc': 20.0, 'disp': 12.0, 'obu':  100.0,
+         'beta': 0.3, 'PrSc': 0.5},
+        # neutral (large |obu|)
+        {'za': 30.0, 'hc': 20.0, 'disp': 12.0, 'obu': 1000.0,
+         'beta': 0.3, 'PrSc': 0.5},
+        # different beta and PrSc
+        {'za': 25.0, 'hc': 20.0, 'disp': 12.0, 'obu': -50.0,
+         'beta': 0.25, 'PrSc': 0.6},
+    ],
+    # ── MLCanopyWaterMod :: CalcWettedFraction ──────────────────────────────
+    'test_MLCanopyWaterMod_WettedFraction.exe': [
+        # dry leaf
+        {'h2ocan': 0.0,    'dpai': 1.0, 'dlai': 0.8},
+        # very small h2ocan (below cap threshold)
+        {'h2ocan': 1.0e-5, 'dpai': 1.0, 'dlai': 0.8},
+        # at capacity (h2ocan = dewmx*dpai = 0.1): fwet hits cap 0.05
+        {'h2ocan': 0.1,    'dpai': 1.0, 'dlai': 0.8},
+        # above capacity: fwet still capped at 0.05
+        {'h2ocan': 1.0,    'dpai': 1.0, 'dlai': 0.8},
+        # dlai = dpai (all leaves): fdry = 1 - fwet
+        {'h2ocan': 0.0,    'dpai': 0.5, 'dlai': 0.5},
+        # dpai = 0: fwet = fdry = 0
+        {'h2ocan': 0.0,    'dpai': 0.0, 'dlai': 0.0},
+    ],
+    # ── MLLeafHeatCapacityMod :: CalcLeafHeatCapacity ───────────────────────
+    'test_MLLeafHeatCapacityMod_LeafHeatCapacity.exe': [
+        {'sla': 0.04},   # typical broadleaf (~558 J/K/m2)
+        {'sla': 0.02},   # needle-leaf  (higher LMA → larger cpleaf)
+        {'sla': 0.06},   # grass/forb   (lower LMA → smaller cpleaf)
+        {'sla': 0.01},   # very low SLA
+        {'sla': 0.10},   # very high SLA
+    ],
 }
 
 

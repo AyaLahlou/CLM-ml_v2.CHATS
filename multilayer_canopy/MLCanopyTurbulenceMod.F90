@@ -21,14 +21,12 @@ module MLCanopyTurbulenceMod
   public :: psic_monin_obukhov      ! Monin-Obukhov psi stability function for scalars (public for testing)
   public :: GetBeta                  ! beta = u*/u(h) at canopy top (public for testing)
   public :: GetPrSc                  ! Prandtl/Schmidt number at canopy top (public for testing)
+  public :: GetPsiRSL                ! RSL-modified stability functions psi (public for testing)
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: HF2008                 ! Harman & Finnigan (2008) roughness sublayer theory
   private :: GetObu                 ! Solve for the Obukhov length using subroutine ObuFunc
   private :: ObuFunc                ! Subroutine to solve for the Obukhov length
-  private :: GetBeta                ! beta = u* / u at canopy top
-  private :: GetPrSc                ! Prandlt number (Pr) and Schmidt number (Sc) at canopy top
-  private :: GetPsiRSL              ! RSL-modified stability functions
   private :: LookupPsihat           ! Determines the RSL function psihat as provided through a look-up table
   private :: RoughnessLength        ! Roughness length for momentum
   private :: WindProfile            ! Wind speed profile
