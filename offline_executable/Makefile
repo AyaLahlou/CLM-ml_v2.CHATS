@@ -31,6 +31,8 @@ prgm = prgm.exe
 
 cmplr = nvfortran -C -Minform=inform -Ktrap=fp -L$(LIB_NETCDF) -I$(MOD_NETCDF) -lnetcdff -lblas -lm -L/usr/lib64
 #cmplr = nvfortran -O2 -L$(LIB_NETCDF) -I$(MOD_NETCDF) -lnetcdff -lblas -lm -L/usr/lib64
+# gfortran: use -ffree-line-length-none to allow lines >132 chars (source has long comment lines)
+#cmplr = gfortran -O2 -fno-range-check -ffree-line-length-none -L$(LIB_NETCDF) -I$(MOD_NETCDF) -lnetcdff -lnetcdf -lblas -lm -L/usr/lib64
 
 # Specify module files (that all other files use). Order matters, because some files
 # are used by other files in mods list
