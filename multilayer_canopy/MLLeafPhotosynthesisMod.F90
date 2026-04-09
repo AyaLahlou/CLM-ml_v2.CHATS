@@ -24,7 +24,6 @@ module MLLeafPhotosynthesisMod
   private :: CiFuncGs                ! Calculate An for a specified gs
   private :: StomataOptimization     ! Photosynthesis and stomatal conductance with optimization
   private :: StomataEfficiency       ! Water-use efficiency check for optimal gs
-  private :: RealizedRate            ! Photosynthesis as the minimum or co-limited rate
   !-----------------------------------------------------------------------
 
 contains
