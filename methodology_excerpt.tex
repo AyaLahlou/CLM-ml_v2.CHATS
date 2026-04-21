@@ -1,0 +1,197 @@
+% ============================================================
+% Methodology excerpt — AI-assisted functional test suite for
+% a legacy Fortran earth system model
+% ============================================================
+
+\subsection{AI-Assisted Functional Test Suite Development}
+
+Developing a functional test suite for a large, legacy Fortran code base presents
+challenges that are representative of the broader class of Earth System Models
+(ESMs): subroutines are often tightly coupled to model-specific derived types,
+access modifiers frequently restrict calling from external programs, and the sheer
+number of subroutines makes exhaustive manual coverage prohibitive.  We describe
+here a methodology in which an AI coding assistant (Claude, Anthropic) was used
+interactively to design, implement, and expand a functional test suite for
+CLM-ml~v2, a multilayer plant-canopy extension of the Community Land Model.  The
+methodology is organized around three interlocking concerns: \emph{testability
+assessment}, \emph{driver architecture}, and \emph{verification strategy}, each
+of which generalizes to any Fortran ESM that uses similar compilation and linking
+conventions.
+
+\subsubsection{Testability Assessment and Subroutine Classification}
+
+The first step in the methodology is systematic classification of all public and
+private subroutines according to their testability.  The AI was tasked with reading
+each Fortran source module and categorizing every subroutine into one of three
+tiers.  \emph{Tier~1} subroutines take purely scalar or fixed-size array arguments
+(real, integer, or logical) with no dependency on model-specific derived types, and
+can therefore be called directly from a standalone test program with no further
+modification to the source.  Examples from this work include mathematical utilities
+(\texttt{quadratic}, \texttt{tridiag}, gamma and beta functions), thermodynamic
+functions (\texttt{SatVap}, \texttt{LatVap}), and photosynthesis temperature-response
+factors (\texttt{ft}, \texttt{fth}, \texttt{fth25}).  \emph{Tier~2} subroutines
+contain self-contained, mathematically isolable logic but are embedded in loops over
+a large model-specific derived type (in this case \texttt{mlcanopy\_type}) or are
+declared \texttt{private} to their module.  These require either a visibility change
+(\texttt{public ::} declaration) or the addition of a \emph{scalar helper}
+subroutine—a new, minimal public routine that extracts the pure computation and
+accepts only primitive scalar arguments.  \emph{Tier~3} subroutines are deeply
+coupled to the full model state (multiple derived types, file I/O, or MPI
+communication) and cannot be meaningfully tested without standing up a complete model
+column; these were noted as out of scope for unit-level functional testing.  This
+three-tier classification can be performed by any AI assistant capable of reading
+Fortran source files and should be the first step for any ESM test-suite project,
+because it bounds the effort and prevents wasted work on subroutines whose coupling
+cost exceeds the testing benefit.
+
+\subsubsection{Source Modifications to Expose Testable Interfaces}
+
+Where Tier~2 subroutines were identified as scientifically important, two types of
+minimal, non-breaking source modifications were made.  The first type is a simple
+visibility change: adding a \texttt{public~::} declaration for a subroutine that
+already has a scalar-friendly interface but was declared \texttt{private} for
+encapsulation reasons.  In this work, seven subroutines in
+\texttt{MLLeafPhotosynthesisMod} and \texttt{MLCanopyTurbulenceMod} were exposed
+this way, including the Monin--Obukhov stability functions
+(\texttt{phim\_monin\_obukhov}, \texttt{psim\_monin\_obukhov}, and their scalar
+counterparts) and the canopy-turbulence parameters \texttt{GetBeta},
+\texttt{GetPrSc}, and \texttt{GetPsiRSL}.  The second type is the \emph{scalar
+helper pattern}: a new public subroutine is added to the module, immediately
+following the original, that accepts the same mathematical inputs as scalar
+arguments, performs the identical computation, and returns scalar outputs.  The
+original subroutine is left entirely unchanged; the helper merely lifts the
+relevant formulas out of the loop-over-derived-type structure.  Four such helpers
+were introduced: \texttt{CalcWettedFraction} (for canopy interception physics),
+\texttt{CalcLeafHeatCapacity} (for leaf energy storage), \texttt{CalcLeafBoundaryLayer}
+(for boundary-layer conductances), and \texttt{CalcNitrogenScale} (for the
+exponential canopy nitrogen profile).  Because all modifications are purely additive
+and introduce no new execution paths in existing subroutines, they carry negligible
+risk of altering model behavior and can be merged into any production code base
+without review overhead.  This pattern generalizes directly to any Fortran ESM: the
+key criterion is that the subroutine's physics depends only on its arguments, not on
+global state that cannot be constructed outside the full model context.
+
+\subsubsection{Two-Layer Driver Architecture}
+
+The test framework rests on a two-layer architecture that separates the
+Fortran execution environment from the Python testing logic.  In the first layer,
+each subroutine under test receives a dedicated \emph{Fortran driver program}—a
+minimal \texttt{program} unit that reads a Fortran namelist from standard input,
+calls the target subroutine with those inputs, and writes the outputs to standard
+output as \texttt{KEY=VALUE} pairs in IEEE~754 double-precision exponential format
+(\texttt{ES24.16}).  Namelists were chosen because they are a native Fortran
+mechanism requiring no external libraries, support mixed scalar and array inputs
+without custom parsing, and are trivial to generate programmatically from Python.
+The \texttt{KEY=VALUE} output convention requires no third-party output libraries
+and is unambiguously parseable by a single regular expression.  Each driver is
+compiled and linked against the full set of object files produced by the main model
+build (excluding only the model's own \texttt{main} program), so the test executable
+uses exactly the same compiled physics as the production model.  A single GNU
+\texttt{make} pattern rule handles all 26 drivers with no per-driver configuration.
+In the second layer, a Python \texttt{pytest} suite provides the testing logic.  A
+shared utility function, \texttt{run\_fortran(exe\_name, inputs\_dict)}, constructs
+the namelist string, pipes it to the driver executable via \texttt{subprocess.run},
+and returns a dictionary mapping output key names to floating-point values.  This
+clean interface means that every Python test is free of Fortran syntax and can
+express assertions in idiomatic Python with standard \texttt{assert} statements.  A
+session-scoped \texttt{pytest} fixture in \texttt{conftest.py} invokes \texttt{make
+all} once at the start of each test session, so the executables are always
+up-to-date before any test runs.  This architecture is directly portable to any
+Fortran ESM that uses a batch-oriented build system (Make, CMake, or similar),
+because the only requirement is that object files from the main build can be linked
+with an external \texttt{program} unit.
+
+\subsubsection{Verification Strategy: Property Tests and Golden-File Regression}
+
+Each Python test module combines two complementary assertion strategies.
+\emph{Property-based tests} verify mathematical or physical invariants that hold
+for all valid inputs and can be derived analytically from the governing equations.
+Examples include: the Clausius--Clapeyron relation (saturation vapor pressure is
+monotonically increasing with temperature and its derivative is positive); Vieta's
+formulas for the roots of a quadratic; the symmetry $B(a,b)=B(b,a)$ and boundary
+conditions $F(0;a,b)=0$, $F(1;a,b)=1$ of the beta distribution; the neutral
+condition $\phi_m(0)=1$ and stable asymptote $\phi_m(\zeta)=1+5\zeta$ of the
+Monin--Obukhov stability functions; the implicit consistency equation
+$\beta\,\phi_m(L_{cL}\beta^2) = \beta_\mathrm{neutral}$ for the canopy wind
+attenuation ratio; the exact cancellation $\psi_m = v_{kc}/\beta$, $\psi_c = 0$
+at $z_a = h_c$ in the Roughness Sublayer formulation; and the Butcher tableau
+consistency condition $\sum_j b_j = 1$ for the Runge--Kutta integration scheme.
+\emph{Reference-value tests} compare computed outputs against tabulated or
+analytically computed expected values at specific inputs, providing a precise
+numerical anchor.  The combination of the two strategies means that a regression
+is caught whether it manifests as a qualitative sign error (property failure) or a
+subtle numerical drift (reference-value failure).
+
+In addition to the per-subroutine tests, a \emph{golden-file regression system}
+captures the complete input--output record of a trusted model build.  A script,
+\texttt{generate\_golden.py}, runs every driver executable against a curated set
+of representative input cases, recording inputs and outputs as JSON files in a
+committed \texttt{tests/golden/} directory.  A dedicated test module,
+\texttt{test\_golden.py}, loads these files at every subsequent \texttt{pytest}
+session and re-runs all cases, asserting that outputs match the golden record
+within a tight numerical tolerance.  This provides a safety net for unintentional
+regressions introduced by compiler upgrades, optimization flag changes, or
+algorithm edits.  The golden files are committed alongside the source code, so
+the regression baseline travels with the code in version control.  When a change
+is \emph{intentional}, the developer re-runs \texttt{generate\_golden.py} and
+commits the updated JSON files together with the source change, making the audit
+trail explicit.  This two-stage approach—\emph{per-subroutine property/reference
+tests} for physical correctness plus \emph{golden-file regression} for
+reproducibility—provides defense in depth and is directly applicable to any ESM
+with a deterministic, bit-reproducible build.
+
+\subsubsection{Parent-Level Integration Testing}
+
+A third test pattern was developed for subroutines that contain \emph{internal
+analytical consistency assertions}—cases where the subroutine itself checks whether
+its own outputs satisfy a mathematical identity and aborts if they do not.  These
+assertions cannot be exercised by a single-layer scalar test alone, because they
+involve a sum over all canopy layers.  For \texttt{CanopyNitrogenProfile}, the
+relevant identity is
+\begin{equation}
+  \sum_{i=1}^{N} V_{\mathrm{cmax},25}^{(i)}\,\Delta\mathrm{PAI}^{(i)}
+  \;=\;
+  V_{\mathrm{cmax},25}^{\mathrm{top}}
+  \,\frac{1 - e^{-k_n\,\mathrm{PAI}_{\mathrm{tot}}}}{k_n},
+  \label{eq:nitrogen_integral}
+\end{equation}
+which states that the discrete layer-by-layer sum of the exponential nitrogen
+decay profile must reproduce the closed-form analytical integral over the entire
+canopy.  A \emph{parent-level integration driver} was written that accepts a full
+multi-layer canopy configuration via namelist, replicates the production loop using
+the scalar helper \texttt{CalcNitrogenScale}, and outputs both the numerical sum
+and the analytical reference, allowing the Python test to verify Eq.\
+\eqref{eq:nitrogen_integral} for arbitrary layer counts and PAI distributions.
+Critically, the test also verifies \emph{layer-count invariance}: discretizing the
+same total canopy depth into 3 layers or 6 layers yields identical integrated
+$V_{\mathrm{cmax},25}$, confirming that the integration scheme is free of
+discretization error.  This pattern generalizes to any ESM subroutine that
+contains an internal energy, mass, or tracer conservation check: the check provides
+a natural test oracle, and the parent-level driver simply needs to supply the
+structured inputs required to trigger it.
+
+\subsubsection{Iterative AI-Driven Expansion}
+
+The test suite was built through multiple rounds of interaction in which the AI was
+asked first to \emph{assess} remaining testability gaps and then to
+\emph{implement} the identified tests.  Each assessment round involved the AI
+reading the current source modules, comparing them against the list of already-tested
+subroutines, classifying the remainder by tier, and providing a ranked list of
+candidates with rationale.  This iterative pattern—assess, implement, reassess—is
+well-suited to AI assistance because the assessment step requires broad but shallow
+reading of many files (a task at which large language models are efficient) while
+the implementation step requires precise, consistent application of a fixed pattern
+(the driver template, the Python test structure, the Makefile rule) to each new
+candidate.  The boundary between what is tractable and what is not (Tier~3
+subroutines, root-finding functions that require a model-specific function pointer)
+was surfaced by the AI during assessment and accepted without further implementation
+effort, avoiding wasted work.  Over six implementation rounds, the suite grew from
+15 to 26 executables covering 10 modules and 32 distinct subroutines or functions.
+The total number of lines of test code (Fortran drivers, Python tests,
+infrastructure) produced during these rounds exceeds 4,000, all of which was
+verified for correctness against known analytical results or physical constraints
+before being committed.  We expect this iterative, AI-driven workflow to be
+reproducible for any Fortran ESM: the key inputs are the module source files and
+a description of the build system; the key output is a growing library of
+executable, self-describing tests that remain useful long after the original
+development effort concludes.
