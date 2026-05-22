@@ -1,6 +1,6 @@
 {
-  "generated_utc": "2026-03-24T23:02:03.689739+00:00",
-  "executable": "test_phim_mo.exe",
+  "generated_utc": "2026-05-22T00:28:22.951726+00:00",
+  "executable": "test_MLCanopyTurbulenceMod_phim_monin_obukhov.exe",
   "cases": [
     {
       "inputs": {

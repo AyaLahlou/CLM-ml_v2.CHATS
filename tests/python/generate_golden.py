@@ -8,7 +8,7 @@ Usage (from the tests/ directory):
 Or from anywhere:
     python tests/python/generate_golden.py
 
-For each executable a JSON file is written to tests/golden/<exe_name>.json.
+For each executable a JSON file is written to golden_IO/<exe_name>.json.
 Each JSON file records the inputs and outputs of a representative set of
 test cases captured from a verified, trusted build of the code.
 
@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from utils import run_fortran  # noqa: E402
 
-GOLDEN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'golden')
+GOLDEN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'golden_IO')
 
 # ---------------------------------------------------------------------------
 # Representative input cases for each executable
@@ -420,7 +420,7 @@ def main():
             print(f'  {name}')
         sys.exit(1)
     else:
-        print(f'Golden data written to {os.path.abspath(GOLDEN_DIR)}/')
+        print(f'Golden data written to {os.path.abspath(GOLDEN_DIR)}')
         print('Commit the JSON files alongside your code changes.')
 
 

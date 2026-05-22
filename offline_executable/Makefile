@@ -6,6 +6,7 @@
 # To remove obj files and mod files: type 'make clean'
 # ###############################################
  
+NETCDF_PATH ?= $(shell nf-config --prefix 2>/dev/null)
 LIB_NETCDF = $(NETCDF_PATH)/lib
 MOD_NETCDF = $(NETCDF_PATH)/include
  
@@ -29,8 +30,8 @@ prgm = prgm.exe
 
 # Fortran 95 compiler
 
-cmplr = nvfortran -C -Minform=inform -Ktrap=fp -L$(LIB_NETCDF) -I$(MOD_NETCDF) -lnetcdff -lblas -lm -L/usr/lib64
-#cmplr = nvfortran -O2 -L$(LIB_NETCDF) -I$(MOD_NETCDF) -lnetcdff -lblas -lm -L/usr/lib64
+cmplr = nvfortran -C -Minform=inform -Ktrap=fp -module $(O) -I$(O) -L$(LIB_NETCDF) -I$(MOD_NETCDF) -lnetcdff -lblas -lm -L/usr/lib64
+#cmplr = nvfortran -O2 -module $(O) -I$(O) -L$(LIB_NETCDF) -I$(MOD_NETCDF) -lnetcdff -lblas -lm -L/usr/lib64
 # gfortran: use -ffree-line-length-none to allow lines >132 chars (source has long comment lines)
 #cmplr = gfortran -O2 -fno-range-check -ffree-line-length-none -L$(LIB_NETCDF) -I$(MOD_NETCDF) -lnetcdff -lnetcdf -lblas -lm -L/usr/lib64
 
@@ -322,7 +323,7 @@ ${O}/MLLeafFluxesMod.o: ${can}/MLLeafFluxesMod.F90 $(mods)
 	$(cmplr) -c ${can}/MLLeafFluxesMod.F90
 	mv MLLeafFluxesMod.o ${O}
 
-${O}/MLLeafPhotosynthesisMod.o: ${can}/MLLeafPhotosynthesisMod.F90 $(mods)
+${O}/MLLeafPhotosynthesisMod.o: ${can}/MLLeafPhotosynthesisMod.F90 ${O}/abortutils.o $(mods)
 	$(cmplr) -c ${can}/MLLeafPhotosynthesisMod.F90
 	mv MLLeafPhotosynthesisMod.o ${O}
 
@@ -396,4 +397,4 @@ ${O}/CLMml.o: ${drv}/CLMml.F90 $(mods) ${O}/CLMml_driver.o
 
 clean:
 	rm ${O}/*.o
-	rm *.mod
+	rm -f ${O}/*.mod *.mod

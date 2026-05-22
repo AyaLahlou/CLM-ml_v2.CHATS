@@ -15,12 +15,14 @@
 
 MAIN_BUILD = ../offline_executable
 OBJ        = $(MAIN_BUILD)/obj
+NETCDF_PATH ?= $(shell nf-config --prefix 2>/dev/null)
 LIB_NETCDF = $(NETCDF_PATH)/lib
 MOD_NETCDF = $(NETCDF_PATH)/include
+MAIN_EXE   = $(MAIN_BUILD)/prgm.exe
 
 # Compiler: same flags as the main build
 cmplr = nvfortran -C -Minform=inform -Ktrap=fp \
-        -I$(MAIN_BUILD) -I$(MOD_NETCDF) \
+  -I$(MAIN_BUILD) -I$(OBJ) -I$(MOD_NETCDF) \
         -L$(LIB_NETCDF) -lnetcdff -lblas -lm -L/usr/lib64
 
 BIN = bin
@@ -58,9 +60,12 @@ TARGETS = \
   $(BIN)/test_MLCanopyNitrogenProfileMod_NitrogenScale.exe \
   $(BIN)/test_MLCanopyNitrogenProfileMod_CanopyNitrogenProfile.exe
 
-.PHONY: all clean
+.PHONY: all clean clean-all main-build
 
-all: $(BIN) $(TARGETS)
+all: main-build $(BIN) $(TARGETS)
+
+main-build:
+	$(MAKE) -C $(MAIN_BUILD)
 
 $(BIN):
 	mkdir -p $(BIN)
@@ -71,3 +76,7 @@ $(BIN)/%.exe: $(SRC)/%.F90 $(MAIN_OBJS)
 
 clean:
 	rm -f $(BIN)/*.exe
+
+# Use clean-all when switching compilers (removes main-build obj/ too)
+clean-all: clean
+	$(MAKE) -C $(MAIN_BUILD) clean

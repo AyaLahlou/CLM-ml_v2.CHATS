@@ -1,7 +1,7 @@
 """
 Golden (trusted-run) regression tests for all Fortran subroutines.
 
-For each executable, tests/golden/<exe>.json holds the inputs and outputs
+For each executable, golden_IO/<exe>.json holds the inputs and outputs
 captured from a verified, trusted build of the code.  These tests re-run
 every case with the same inputs and verify that the outputs match the golden
 values within a tight tolerance (1e-14 relative, 1e-300 absolute – effectively
@@ -26,7 +26,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from utils import run_fortran  # noqa: E402
 
-GOLDEN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'golden')
+GOLDEN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'golden_IO')
 
 # Tolerance for regression comparison.
 # Chosen tight enough to catch any meaningful numerical drift while still
@@ -73,7 +73,7 @@ _ALL_CASES = _load_all_cases()
 # ---------------------------------------------------------------------------
 if not _ALL_CASES:
     pytest.skip(
-        'No golden data found in tests/golden/.  '
+        'No golden data found in golden_IO/.  '
         'Run  python tests/python/generate_golden.py  first.',
         allow_module_level=True,
     )
